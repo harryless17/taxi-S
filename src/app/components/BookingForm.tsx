@@ -1,8 +1,7 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Génère la date/heure par défaut (now +1h, minutes à 00)
 function getDefaultDateTime() {
     const now = new Date();
     now.setHours(now.getHours() + 1);
@@ -16,33 +15,83 @@ function getDefaultDateTime() {
     return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
 }
 
+const defaultForm = {
+    nom: "",
+    tel: "",
+    depart: "",
+    arrivee: "",
+    date: getDefaultDateTime(),
+    passagers: "",
+    bagages: "",
+};
+
 export default function BookingForm() {
+    const [form, setForm] = useState(defaultForm);
     const [sent, setSent] = useState(false);
-    const [form, setForm] = useState({
-        nom: "",
-        tel: "",
-        depart: "",
-        arrivee: "",
-        date: getDefaultDateTime(),
-        passagers: "",
-        bagages: "",
-    });
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setForm(f => ({ ...f, [e.target.name]: e.target.value }));
-    };
+    // Pré-remplissage ultra safe (query params, localStorage, etc)
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        // 1. Query params
+        const params = new URLSearchParams(window.location.search);
+        const fromUrl = {
+            nom: params.get("nom") || undefined,
+            tel: params.get("tel") || undefined,
+            depart: params.get("depart") || undefined,
+            arrivee: params.get("arrivee") || undefined,
+            date: params.get("date") || undefined,
+            passagers: params.get("passagers") || undefined,
+            bagages: params.get("bagages") || undefined,
+        };
+        // 2. localStorage
+        let fromStorage = {};
+        try {
+            const last = window.localStorage.getItem('taxi-last-booking');
+            if (last) fromStorage = JSON.parse(last);
+        } catch { /* ignore */ }
+        // 3. Fusion : priorité URL > Storage > Defaults
+        setForm(f => ({
+            ...f,
+            ...fromStorage,
+            ...Object.fromEntries(Object.entries(fromUrl).filter(([k, v]) => v)),
+            nom: fromUrl.nom || (fromStorage as any).nom || "",
+            tel: fromUrl.tel || (fromStorage as any).tel || "",
+            depart: fromUrl.depart || (fromStorage as any).depart || "",
+            arrivee: fromUrl.arrivee || (fromStorage as any).arrivee || "",
+            date: fromUrl.date || (fromStorage as any).date || getDefaultDateTime(),
+            passagers: fromUrl.passagers || (fromStorage as any).passagers || "",
+            bagages: fromUrl.bagages || (fromStorage as any).bagages || "",
+        }));
 
+    }, []);
+
+    // Mémorise au submit
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (window.navigator.vibrate) window.navigator.vibrate(80);
         setSent(true);
         setTimeout(() => {
+            window.localStorage.setItem('taxi-last-booking', JSON.stringify(form));
             const msg = encodeURIComponent(
                 `Bonjour, je souhaite réserver un taxi.\nNom : ${form.nom}\nTéléphone : ${form.tel}\nDépart : ${form.depart}\nArrivée : ${form.arrivee}\nDate/Heure : ${form.date}\nPassagers : ${form.passagers}\nBagages : ${form.bagages}`
             );
             window.open(`https://wa.me/33615392250?text=${msg}`, '_blank');
             setSent(false);
         }, 800);
+    };
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+    };
+
+    // Bouton pré-remplir rapide
+    const handleQuickFill = () => {
+        setForm(f => ({
+            ...f,
+            date: getDefaultDateTime(),
+            depart: "Paris, France",
+            passagers: ""
+        }));
     };
 
     return (
@@ -96,11 +145,37 @@ export default function BookingForm() {
                     Réserver via WhatsApp
                 </button>
             </form>
+
+            {/* Mention assurance professionnelle */}
+            <div className="flex items-center gap-2 mt-4 text-green-700 text-sm font-semibold justify-center">
+                <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24">
+                    <path d="M12 22C7.03 22 3 17.97 3 13C3 9.13 5.94 5.68 10.44 3.27C11.13 2.89 12.08 2.89 12.77 3.27C17.27 5.68 20.21 9.13 20.21 13C20.21 17.97 16.18 22 12 22Z" stroke="currentColor" strokeWidth="2" />
+                    <path d="M9 13.5L11 15.5L15 11.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Assurance professionnelle – RC Pro incluse
+            </div>
+
+            {/* Quick-fill */}
+            <button
+                type="button"
+                className="mt-3 px-4 py-2 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold mx-auto block hover:bg-blue-200 transition"
+                onClick={handleQuickFill}
+            >
+                Pré-remplir pour un départ immédiat à Paris
+            </button>
+            {/* RGPD & carte de visite */}
             <p className="text-xs text-gray-400 mt-2 text-center">
                 Vos données ne sont jamais stockées : la réservation se fait uniquement via WhatsApp. <span className="inline-block ml-1">🔒</span>
             </p>
-
-
+            <a
+                href="https://wa.me/33615392250?text=Merci%20de%20m'envoyer%20votre%20carte%20de%20visite%20taxi."
+                className="block text-blue-600 underline mt-4 text-center font-semibold hover:text-blue-800 transition"
+                target="_blank"
+                rel="noopener noreferrer"
+            >
+                Recevoir la carte de visite taxi
+            </a>
+            {/* Animation feedback */}
             <AnimatePresence>
                 {sent && (
                     <motion.div

@@ -9,34 +9,27 @@ import ContactExpress from "./components/ContactExpress";
 import Footer from "./components/Footer";
 import ChauffeurBio from "./components/ChauffeurBio";
 
-
-
-
-
-
-
 export default function Home() {
   return (
-    <main className="min-h-screen bg-gradient-to-b from-blue-100 via-white to-blue-50 flex flex-col items-center px-2 md:px-0">
-
+    <main className="min-h-screen bg-gradient-to-b from-blue-100 via-white to-blue-50 flex flex-col items-center">
       {/* HERO */}
       <Hero />
       {/* SERVICES */}
       <Services />
       {/* AVIS CLIENT */}
       <Testimonials />
-      {/* FORMULAIRE DE RÉSERVATION */}
+      {/* BIO CHAUFFEUR */}
       <ChauffeurBio />
+      {/* FORMULAIRE DE RÉSERVATION */}
       <BookingForm />
+      {/* TARIFS */}
       <Tariffs />
+      {/* FAQ */}
       <Faq />
+      {/* CONTACT EXPRESS */}
       <ContactExpress />
-
       {/* FOOTER */}
       <Footer />
-
     </main>
   );
 }
-
-

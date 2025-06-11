@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const faqs = [
     {
@@ -34,42 +34,49 @@ export default function Faq() {
         >
             <h2 className="text-2xl font-bold text-blue-700 mb-6 text-center">FAQ – Questions fréquentes</h2>
             <div className="space-y-4">
-                {faqs.map((faq, i) => (
-                    <motion.div
-                        key={faq.question}
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: i * 0.08, duration: 0.5 }}
-                    >
-                        <button
-                            type="button"
-                            onClick={() => setOpen(open === i ? null : i)}
-                            className="w-full flex justify-between items-center bg-blue-50 px-6 py-4 rounded-xl shadow hover:bg-blue-100 transition font-semibold text-blue-800 text-left"
-                            aria-expanded={open === i}
-                            aria-controls={`faq-answer-${i}`}
-                        >
-                            <span>{faq.question}</span>
-                            <svg className={`w-6 h-6 ml-2 transform transition-transform ${open === i ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                <path d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
+                {faqs.map((faq, i) => {
+                    const isOpen = open === i;
+                    return (
                         <motion.div
-                            id={`faq-answer-${i}`}
-                            initial={false}
-                            animate={open === i ? { height: "auto", opacity: 1 } : { height: 0, opacity: 0 }}
-                            transition={{ duration: 0.3 }}
-                            className="overflow-hidden bg-white px-6"
-                            style={{ borderBottomLeftRadius: 12, borderBottomRightRadius: 12 }}
+                            key={faq.question}
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: i * 0.08, duration: 0.5 }}
                         >
-                            {open === i && (
-                                <div className="py-4 text-blue-700 border-t border-blue-100">
-                                    {faq.answer}
-                                </div>
-                            )}
+                            <button
+                                type="button"
+                                onClick={() => setOpen(isOpen ? null : i)}
+                                className="w-full flex justify-between items-center bg-blue-50 px-6 py-4 rounded-xl shadow hover:bg-blue-100 transition font-semibold text-blue-800 text-left"
+                                aria-expanded={isOpen}
+                                aria-controls={`faq-answer-${i}`}
+                            >
+                                <span>{faq.question}</span>
+                                <svg className={`w-6 h-6 ml-2 transform transition-transform ${isOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                    <path d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            <AnimatePresence initial={false}>
+                                <motion.div
+                                    id={`faq-answer-${i}`}
+                                    initial={false}
+                                    animate={isOpen
+                                        ? { maxHeight: 200, opacity: 1, paddingTop: 16, paddingBottom: 16 }
+                                        : { maxHeight: 0, opacity: 0, paddingTop: 0, paddingBottom: 0 }
+                                    }
+                                    transition={{ duration: 0.32, ease: "easeInOut" }}
+                                    exit={{ maxHeight: 0, opacity: 0, paddingTop: 0, paddingBottom: 0, transition: { duration: 0.32 } }}
+                                    className="overflow-hidden bg-white px-6"
+                                    style={{ borderBottomLeftRadius: 12, borderBottomRightRadius: 12 }}
+                                >
+                                    <div className="text-blue-700 border-t border-blue-100 text-sm">
+                                        {faq.answer}
+                                    </div>
+                                </motion.div>
+                            </AnimatePresence>
                         </motion.div>
-                    </motion.div>
-                ))}
+                    );
+                })}
             </div>
         </motion.section>
     );
