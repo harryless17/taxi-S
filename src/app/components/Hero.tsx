@@ -105,7 +105,12 @@ export default function Hero() {
                     href="https://wa.me/33615392250"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-6 flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold px-7 py-4 rounded-full text-lg md:text-xl shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-400"
+                    className="mt-6 btn-whatsapp flex items-center gap-2
+    bg-green-600 hover:bg-green-700 active:bg-green-800
+    text-white hover:text-white font-bold px-7 py-4 rounded-full
+    text-lg md:text-xl shadow-xl
+    transition-all duration-200
+    focus:outline-none focus:ring-2 focus:ring-green-400"
                     whileHover={{ scale: 1.07 }}
                     whileTap={{ scale: 0.97 }}
                     aria-label="Réserver via WhatsApp"

@@ -29,8 +29,13 @@ export default function StickyWhatsAppButton() {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={handleClick}
-                className={`fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[90vw] max-w-xs bg-green-600 text-white flex items-center justify-center font-bold px-4 py-3 rounded-2xl shadow-2xl transition-all duration-200 ${show ? "opacity-100" : "opacity-0 pointer-events-none"
-                    } md:hidden`}
+                className={`
+    fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[90vw] max-w-xs
+    bg-green-600 text-white !text-white hover:!text-white
+    flex items-center justify-center font-bold px-4 py-3 rounded-2xl
+    shadow-2xl transition-all duration-200 btn-whatsapp
+    ${show ? "opacity-100" : "opacity-0 pointer-events-none"} md:hidden
+  `}
                 aria-label="Réserver via WhatsApp"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 32 32" fill="none" className="mr-2">

@@ -20,6 +20,7 @@ type BookingFormData = {
     tel: string;
     depart: string;
     arrivee: string;
+    arrets?: string;
     date: string;
     passagers: string;
     bagages: string;
@@ -30,6 +31,7 @@ const defaultForm: BookingFormData = {
     tel: "",
     depart: "",
     arrivee: "",
+    arrets: "",
     date: getDefaultDateTime(),
     passagers: "",
     bagages: "",
@@ -80,8 +82,9 @@ export default function BookingForm() {
         setTimeout(() => {
             window.localStorage.setItem('taxi-last-booking', JSON.stringify(form));
             const msg = encodeURIComponent(
-                `Bonjour, je souhaite réserver un taxi.\nNom : ${form.nom}\nTéléphone : ${form.tel}\nDépart : ${form.depart}\nArrivée : ${form.arrivee}\nDate/Heure : ${form.date}\nPassagers : ${form.passagers}\nBagages : ${form.bagages}`
+                `Bonjour, je souhaite réserver un taxi.\nNom : ${form.nom}\nTéléphone : ${form.tel}\nDépart : ${form.depart}\nArrivée : ${form.arrivee}\nArrêts : ${form.arrets}\nDate/Heure : ${form.date}\nPassagers : ${form.passagers}\nBagages : ${form.bagages}`
             );
+
             window.open(`https://wa.me/33615392250?text=${msg}`, '_blank');
             setSent(false);
         }, 800);
@@ -118,6 +121,8 @@ export default function BookingForm() {
                 <input name="tel" required type="tel" className="w-full border border-blue-200 rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Téléphone" value={form.tel} onChange={handleChange} />
                 <input name="depart" required className="w-full border border-blue-200 rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 md:col-span-2" placeholder="Départ" value={form.depart} onChange={handleChange} />
                 <input name="arrivee" required className="w-full border border-blue-200 rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 md:col-span-2" placeholder="Arrivée" value={form.arrivee} onChange={handleChange} />
+                <input name="arrets" className="w-full border border-blue-200 rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 md:col-span-2" placeholder="Arrêts (optionnel) – ex : 12 rue Victor Hugo" value={form.arrets} onChange={handleChange} />
+
                 <input
                     name="date"
                     required
