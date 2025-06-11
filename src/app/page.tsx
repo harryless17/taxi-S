@@ -1,6 +1,5 @@
 'use client';
 import { useState } from "react";
-import { motion } from 'framer-motion';
 import Hero from "./components/Hero";
 import Services from "./components/Services";
 import Testimonials from "./components/Testimonials";
@@ -18,17 +17,6 @@ import ChauffeurBio from "./components/ChauffeurBio";
 
 
 export default function Home() {
-  // Animation variants
-  const fadeInUp = {
-    hidden: { opacity: 0, y: 40 },
-    visible: (i: number) => ({
-      opacity: 1,
-      y: 0,
-      transition: { delay: i * 0.18, duration: 0.7, ease: "easeOut" }
-    }),
-  };
-
-
   // Génère la date et l'heure par défaut (now + 1h, minutes à 00)
   function getDefaultDateTime() {
     const now = new Date();
@@ -42,7 +30,6 @@ export default function Home() {
     const mi = pad(now.getMinutes());
     return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
   }
-  const [defaultDateTime] = useState(getDefaultDateTime());
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-blue-100 via-white to-blue-50 flex flex-col items-center px-2 md:px-0">
