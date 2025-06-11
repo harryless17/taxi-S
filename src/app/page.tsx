@@ -2,61 +2,36 @@
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-gray-50 flex flex-col items-center px-2 md:px-0">
+    <main className="min-h-screen flex flex-col items-center px-2 md:px-0 bg-gradient-to-b from-green-50 via-white to-green-100">
+
 
       {/* Header */}
-      <header className="w-full max-w-md px-4 py-6 bg-white shadow-md flex flex-col items-center rounded-b-2xl">
-        <h1 className="text-2xl md:text-3xl font-bold text-green-600 tracking-tight">Taxi Aghiles</h1>
-        <p className="text-gray-700 mt-1 text-base md:text-lg text-center">
-          Votre taxi 24h/24 à Lyon
-        </p>
+      <header className="w-full bg-gradient-to-r from-green-200 via-green-50 to-green-100 py-10 px-4 flex flex-col items-center shadow-lg">
+        <img src="/taxi.png" alt="Taxi" className="w-24 h-24 rounded-full shadow-lg mb-4 border-4 border-white" />
+        <h1 className="text-3xl md:text-4xl font-extrabold text-green-700">Taxi Aghiles</h1>
+        <p className="text-gray-700 mt-2 text-lg md:text-xl text-center">Votre taxi 24h/24 à Lyon</p>
       </header>
 
-      {/* Présentation */}
-      <section className="w-full max-w-md mt-8 bg-white rounded-2xl shadow-md p-6 flex flex-col gap-2">
-        <img
-          src="/taxi.png"
-          alt="Votre chauffeur"
-          className="w-20 h-20 rounded-full mx-auto mb-4 shadow-lg object-cover border-4 border-green-100"
-        />
-        <h2 className="text-xl md:text-2xl font-semibold text-green-700 mb-2">Présentation</h2>
-        <ul className="text-gray-700 space-y-1 list-none text-base md:text-lg pl-0">
-          <li>🚕 Service familial, disponible 24h/24 et 7j/7</li>
-          <li>⏱️ Ponctualité et sécurité assurées</li>
-          <li>🧳 Toutes distances : aéroports, gares, événements, tourisme</li>
-        </ul>
-        <div className="flex gap-4 mt-4 justify-center">
-          {/* Taxi */}
-          <div className="flex flex-col items-center text-green-700">
-            <svg width="32" height="32" fill="none" viewBox="0 0 32 32">
-              <rect x="7" y="13" width="18" height="9" rx="3" fill="#22c55e" />
-              <circle cx="11" cy="24" r="2" fill="#a3e635" />
-              <circle cx="21" cy="24" r="2" fill="#a3e635" />
-            </svg>
-            <span className="text-xs mt-1">Taxi</span>
-          </div>
-          {/* Aéroport */}
-          <div className="flex flex-col items-center text-green-700">
-            <svg width="32" height="32" fill="none" viewBox="0 0 32 32">
-              <path d="M16 6v20M10 22l6-4 6 4" stroke="#22c55e" strokeWidth="2" />
-              <circle cx="16" cy="8" r="2" fill="#a3e635" />
-            </svg>
-            <span className="text-xs mt-1">Aéroport</span>
-          </div>
-          {/* Valise */}
-          <div className="flex flex-col items-center text-green-700">
-            <svg width="32" height="32" fill="none" viewBox="0 0 32 32">
-              <rect x="10" y="13" width="12" height="9" rx="2" fill="#22c55e" />
-              <rect x="13" y="10" width="6" height="3" rx="1" fill="#a3e635" />
-            </svg>
-            <span className="text-xs mt-1">Bagages</span>
-          </div>
-        </div>
 
+      {/* Présentation */}
+      <section className="w-full max-w-3xl mt-8 bg-white rounded-2xl shadow-md p-6 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+        <div>
+          <h2 className="text-xl md:text-2xl font-semibold text-green-700 mb-2">Présentation</h2>
+          <ul className="text-gray-700 space-y-1 list-none text-base md:text-lg pl-0">
+            <li>🚕 Service familial, disponible 24h/24 et 7j/7</li>
+            <li>⏱️ Ponctualité et sécurité assurées</li>
+            <li>🧳 Toutes distances : aéroports, gares, événements, tourisme</li>
+          </ul>
+        </div>
+        <div className="flex justify-center md:justify-end">
+          <img src="/taxi.png" alt="Taxi" className="w-40 h-40 rounded-full shadow-lg border-4 border-green-100" />
+        </div>
       </section>
 
+
+
       {/* Réservation */}
-      <section className="w-full max-w-md mt-8 bg-white rounded-2xl shadow-lg p-6 flex flex-col gap-3">
+      <section className="w-full max-w-xl md:max-w-2xl mt-8 bg-white rounded-2xl shadow-lg p-6 flex flex-col gap-3">
         <h2 className="text-xl md:text-2xl font-semibold text-green-700 mb-4">Réservez votre trajet</h2>
         <form
           onSubmit={e => {
@@ -118,7 +93,7 @@ export default function Home() {
       </section>
 
       {/* Contact rapide */}
-      <section className="w-full max-w-md mt-8 mb-4 flex flex-col items-center">
+      <section className="w-full max-w-xl md:max-w-2xl mt-8 mb-4 flex flex-col items-center">
         <a
           href="tel:0600000000"
           className="text-lg text-green-700 underline font-bold"
@@ -136,9 +111,13 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="w-full bg-white py-4 flex justify-center text-gray-400 text-sm border-t mt-8">
-        © 2025 Taxi Aghiles. Mentions légales.
+      <footer className="w-full bg-white py-4 flex flex-col items-center text-gray-400 text-xs border-t mt-8">
+        <div>
+          © 2025 Taxi Aghiles.
+          <a href="/mentions-legales" className="ml-2 underline hover:text-green-700">Mentions légales</a>
+        </div>
       </footer>
+
 
       {/* Bouton WhatsApp flottant */}
       <a
