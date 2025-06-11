@@ -8,8 +8,8 @@ export default function Home() {
       {/* Header */}
       <header className="w-full bg-gradient-to-r from-green-200 via-green-50 to-green-100 py-10 px-4 flex flex-col items-center shadow-lg">
         <img src="/taxi.png" alt="Taxi" className="w-24 h-24 rounded-full shadow-lg mb-4 border-4 border-white" />
-        <h1 className="text-3xl md:text-4xl font-extrabold text-green-700">Taxi Aghiles</h1>
-        <p className="text-gray-700 mt-2 text-lg md:text-xl text-center">Votre taxi 24h/24 à Lyon</p>
+        <h1 className="text-3xl md:text-4xl font-extrabold text-green-700">Taxi S</h1>
+        <p className="text-gray-700 mt-2 text-lg md:text-xl text-center">Votre taxi 24h/24 à Paris</p>
       </header>
 
 
