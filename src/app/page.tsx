@@ -25,46 +25,52 @@ export default function Home() {
           hidden: { opacity: 0 },
           visible: { opacity: 1, transition: { duration: 0.8 } }
         }}
-        className="w-full relative flex flex-col items-center justify-center"
-        style={{ minHeight: 320 }}
+        className="w-full relative flex flex-col items-center justify-center overflow-hidden"
+        style={{ minHeight: 400 }}
       >
+        {/* Illustration semi-réaliste Paris + Taxi */}
         <img
-          src="/taxi-paris.jpg"
-          alt="Taxi à Paris"
-          className="absolute top-0 left-0 w-full h-full object-cover brightness-75"
-          style={{ zIndex: 1, minHeight: 320, maxHeight: 400 }}
+          src="/paris-taxi-hero.png"
+          alt="Taxi Aghiles à Paris"
+          className="absolute top-0 left-0 w-full h-full object-cover z-0"
+          style={{ minHeight: 400, maxHeight: 540 }}
         />
-        <div className="relative z-10 flex flex-col items-center py-10">
-          <motion.h1
-            initial={{ opacity: 0, y: -30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1 }}
-            className="text-white text-3xl md:text-5xl font-extrabold drop-shadow-md"
-          >
-            Taxi Aghiles
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 1 }}
-            className="text-blue-100 mt-2 text-xl md:text-2xl text-center drop-shadow"
-          >
-            Votre taxi 24h/24 à Paris
-          </motion.p>
+        {/* Overlay gradient pour lisibilité */}
+        <div className="absolute inset-0 bg-gradient-to-b from-blue-900/80 via-blue-800/50 to-transparent z-10" />
+
+        {/* Bloc texte premium */}
+        <div className="relative z-20 flex flex-col items-center py-16 w-full">
+          <div className="bg-white/70 px-8 py-4 rounded-2xl shadow-xl mb-5 backdrop-blur-sm">
+            <h1 className="text-3xl md:text-5xl font-extrabold text-blue-900 mb-2 text-center drop-shadow-2xl">
+              Taxi Aghiles
+            </h1>
+            <p className="text-blue-700 text-lg md:text-2xl font-semibold text-center">
+              Votre taxi 24h/24 à Paris
+            </p>
+          </div>
           <motion.a
-            href="https://wa.me/33600000000"
+            href="https://wa.me/36615392250"
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-6 bg-white text-blue-700 font-bold px-8 py-3 rounded-full shadow-lg text-lg hover:bg-blue-100 hover:scale-105 transition animate-pulse"
-            initial={{ scale: 0.85, opacity: 0.8 }}
-            animate={{ scale: [0.98, 1, 0.98], opacity: 1 }}
+            className="mt-3 flex items-center gap-3 bg-green-500 hover:bg-green-600 text-white font-bold px-8 py-4 rounded-full text-xl shadow-lg transition hover:scale-105"
+            initial={{ scale: 0.85, opacity: 0.9 }}
+            animate={{ scale: [1, 0.98, 1], opacity: 1 }}
             transition={{ duration: 1.2, repeat: Infinity, repeatType: 'reverse', ease: "easeInOut" }}
             aria-label="Réserver via WhatsApp"
           >
+            {/* Icône WhatsApp */}
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 32 32" fill="none">
+              <circle cx="16" cy="16" r="16" fill="#fff" />
+              <path d="M24.46 22.51c-.35-.17-2.08-1.02-2.4-1.14-.32-.12-.56-.17-.8.18s-.92 1.13-1.13 1.36c-.2.23-.42.25-.77.08-.35-.17-1.48-.55-2.83-1.75-1.05-.94-1.77-2.09-1.98-2.43-.2-.35-.02-.53.15-.7.16-.16.35-.42.53-.63.18-.22.23-.38.35-.63.12-.25.06-.47-.03-.65-.1-.18-.8-1.93-1.1-2.64-.29-.68-.59-.58-.8-.59-.2-.01-.43-.01-.66-.01-.23 0-.6.09-.92.42-.31.34-1.2 1.18-1.2 2.88 0 1.7 1.1 3.34 1.26 3.57.17.23 2.2 3.39 5.38 4.6.75.29 1.33.46 1.78.59.75.24 1.42.21 1.96.13.6-.09 1.85-.76 2.11-1.5.26-.74.26-1.38.18-1.51-.08-.13-.31-.21-.66-.38z" fill="#25D366" />
+            </svg>
             Réserver via WhatsApp
           </motion.a>
+          <span className="text-white text-base md:text-lg mt-6 font-medium drop-shadow opacity-80 text-center">
+            Service professionnel, ponctuel et convivial – Paris et Île-de-France
+          </span>
         </div>
       </motion.section>
+
 
       {/* SERVICES */}
       <motion.section
@@ -123,23 +129,51 @@ export default function Home() {
 
       {/* AVIS CLIENT */}
       <motion.section
-        className="w-full max-w-xl mt-10"
+        className="w-full max-w-2xl mt-10"
         initial={{ opacity: 0, y: 40 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.7, ease: "easeOut" }}
       >
-        <div className="bg-white rounded-2xl shadow-md p-6 flex items-center gap-4">
-          <img src="/client.jpg" alt="Avis client" className="w-12 h-12 rounded-full object-cover border-2 border-blue-200" />
-          <div>
-            <div className="flex items-center gap-1 mb-1">
-              <span className="text-yellow-400 text-lg">★★★★★</span>
-            </div>
-            <div className="text-blue-900 font-semibold">Chauffeur ponctuel et agréable</div>
-            <div className="text-gray-500 text-sm">Marie D.</div>
-          </div>
+        <h2 className="text-2xl font-bold text-blue-700 mb-6 text-center">Ils nous font confiance</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[
+            {
+              name: "Marie D.",
+              photo: "/client-1.jpg",
+              stars: "★★★★★",
+              comment: "Chauffeur ponctuel et agréable, je recommande !"
+            },
+            {
+              name: "Samir L.",
+              photo: "/client-2.png",
+              stars: "★★★★★",
+              comment: "Voiture propre, service rapide et prix très correct."
+            },
+            {
+              name: "Isabelle P.",
+              photo: "/client-3.png",
+              stars: "★★★★★",
+              comment: "Excellent pour mes trajets aéroports, merci !"
+            }
+          ].map((avis, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.12, duration: 0.6 }}
+              className="bg-white rounded-2xl shadow-md p-6 flex flex-col items-center"
+            >
+              <img src={avis.photo} alt={avis.name} className="w-14 h-14 rounded-full object-cover border-2 border-blue-200 mb-3" />
+              <div className="flex items-center gap-1 text-yellow-400 mb-1">{avis.stars}</div>
+              <div className="text-blue-900 font-semibold text-center mb-2">{avis.comment}</div>
+              <div className="text-gray-500 text-xs">{avis.name}</div>
+            </motion.div>
+          ))}
         </div>
       </motion.section>
+
 
       {/* FORMULAIRE DE RÉSERVATION */}
       <motion.section
@@ -162,7 +196,7 @@ export default function Home() {
             const msg = encodeURIComponent(
               `Bonjour, je souhaite réserver un taxi.\nNom : ${nom}\nTéléphone : ${tel}\nDépart : ${dep}\nArrivée : ${arr}\nDate/Heure : ${date}`
             );
-            window.open(`https://wa.me/33600000000?text=${msg}`, '_blank');
+            window.open(`https://wa.me/36615392250?text=${msg}`, '_blank');
           }}
           className="grid grid-cols-1 md:grid-cols-2 gap-4"
         >
