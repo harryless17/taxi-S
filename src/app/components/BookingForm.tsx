@@ -15,7 +15,17 @@ function getDefaultDateTime() {
     return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
 }
 
-const defaultForm = {
+type BookingFormData = {
+    nom: string;
+    tel: string;
+    depart: string;
+    arrivee: string;
+    date: string;
+    passagers: string;
+    bagages: string;
+};
+
+const defaultForm: BookingFormData = {
     nom: "",
     tel: "",
     depart: "",
@@ -26,15 +36,15 @@ const defaultForm = {
 };
 
 export default function BookingForm() {
-    const [form, setForm] = useState(defaultForm);
+    const [form, setForm] = useState<BookingFormData>(defaultForm);
     const [sent, setSent] = useState(false);
 
-    // Pré-remplissage ultra safe (query params, localStorage, etc)
     useEffect(() => {
         if (typeof window === "undefined") return;
+
         // 1. Query params
         const params = new URLSearchParams(window.location.search);
-        const fromUrl = {
+        const fromUrl: Partial<BookingFormData> = {
             nom: params.get("nom") || undefined,
             tel: params.get("tel") || undefined,
             depart: params.get("depart") || undefined,
@@ -43,29 +53,26 @@ export default function BookingForm() {
             passagers: params.get("passagers") || undefined,
             bagages: params.get("bagages") || undefined,
         };
+
         // 2. localStorage
-        let fromStorage = {};
+        let fromStorage: Partial<BookingFormData> = {};
         try {
             const last = window.localStorage.getItem('taxi-last-booking');
             if (last) fromStorage = JSON.parse(last);
         } catch { /* ignore */ }
-        // 3. Fusion : priorité URL > Storage > Defaults
-        setForm(f => ({
-            ...f,
-            ...fromStorage,
-            ...Object.fromEntries(Object.entries(fromUrl).filter(([k, v]) => v)),
-            nom: fromUrl.nom || (fromStorage as any).nom || "",
-            tel: fromUrl.tel || (fromStorage as any).tel || "",
-            depart: fromUrl.depart || (fromStorage as any).depart || "",
-            arrivee: fromUrl.arrivee || (fromStorage as any).arrivee || "",
-            date: fromUrl.date || (fromStorage as any).date || getDefaultDateTime(),
-            passagers: fromUrl.passagers || (fromStorage as any).passagers || "",
-            bagages: fromUrl.bagages || (fromStorage as any).bagages || "",
-        }));
 
+        // 3. Fusion priorité URL > Storage > Defaults
+        setForm({
+            nom: fromUrl.nom ?? fromStorage.nom ?? "",
+            tel: fromUrl.tel ?? fromStorage.tel ?? "",
+            depart: fromUrl.depart ?? fromStorage.depart ?? "",
+            arrivee: fromUrl.arrivee ?? fromStorage.arrivee ?? "",
+            date: fromUrl.date ?? fromStorage.date ?? getDefaultDateTime(),
+            passagers: fromUrl.passagers ?? fromStorage.passagers ?? "",
+            bagages: fromUrl.bagages ?? fromStorage.bagages ?? "",
+        });
     }, []);
 
-    // Mémorise au submit
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (window.navigator.vibrate) window.navigator.vibrate(80);
