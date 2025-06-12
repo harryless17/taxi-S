@@ -81,8 +81,9 @@ export default function AdminDashboard() {
         fetchReservations();
     }, [session]);
 
+    // Sépare les nouvelles des traitées/annulées
     const nouvelles = reservations.filter(r => r.status === "nouveau");
-    const autres = reservations.filter(r => r.status !== "nouveau");
+    const traitees = reservations.filter(r => r.status !== "nouveau");
 
     if (loading) {
         return (
@@ -94,7 +95,7 @@ export default function AdminDashboard() {
 
     return (
         <main className="min-h-screen bg-white text-gray-900 p-2 sm:p-8">
-            <div className="max-w-5xl mx-auto">
+            <div className="max-w-4xl mx-auto">
                 <div className="flex flex-col sm:flex-row sm:justify-between items-center mb-8 gap-4">
                     <h1 className="text-2xl font-bold">Dashboard admin</h1>
                     <button
@@ -108,26 +109,63 @@ export default function AdminDashboard() {
                     </button>
                 </div>
 
-                {/* Nouvelles réservations */}
-                {nouvelles.length > 0 && (
-                    <div className="mb-8 p-4 bg-blue-50 border-l-4 border-blue-400 rounded shadow-sm">
-                        <div className="flex items-center gap-2 mb-2">
-                            <span className="font-bold text-blue-700 text-lg">🆕 {nouvelles.length} nouvelle{nouvelles.length > 1 ? "s" : ""} réservation{nouvelles.length > 1 ? "s" : ""} à traiter</span>
-                        </div>
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full bg-white border border-blue-200 rounded">
-                                <thead>
-                                    <tr className="bg-blue-100">
-                                        <th className="p-2 text-left">Date</th>
-                                        <th className="p-2 text-left">Nom</th>
-                                        <th className="p-2 text-left">Téléphone</th>
-                                        <th className="p-2 text-left">Départ</th>
-                                        <th className="p-2 text-left">Arrivée</th>
-                                        <th className="p-2 text-left">Statut</th>
+                {/* SECTION NOUVELLES RÉSERVATIONS */}
+                <section className="mb-8">
+                    <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                        <span role="img" aria-label="new">🆕</span>
+                        À traiter ({nouvelles.length})
+                    </h2>
+
+                    {/* Mobile : cards */}
+                    <div className="flex flex-col gap-4 sm:hidden">
+                        {loadingList ? (
+                            <div className="text-center text-gray-400">Chargement…</div>
+                        ) : nouvelles.length === 0 ? (
+                            <div className="text-center text-gray-400">Aucune nouvelle réservation.</div>
+                        ) : (
+                            nouvelles.map(resa => (
+                                <div
+                                    key={resa.id}
+                                    className="bg-blue-50 border border-blue-200 shadow rounded-xl p-4"
+                                    onClick={() => setSelected(resa)}
+                                >
+                                    <div className="flex justify-between items-center mb-1">
+                                        <span className="font-bold text-base">{resa.name}</span>
+                                        <StatusBadge status={resa.status} />
+                                    </div>
+                                    <div className="text-xs text-gray-500 mb-2">{resa.date ? new Date(resa.date).toLocaleString("fr-FR") : "-"}</div>
+                                    <div className="text-sm"><span className="font-semibold">Départ :</span> {resa.departure}</div>
+                                    <div className="text-sm"><span className="font-semibold">Arrivée :</span> {resa.arrival}</div>
+                                    <div className="text-sm"><span className="font-semibold">Téléphone :</span> {resa.phone}</div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+
+                    {/* Desktop : tableau */}
+                    <div className="hidden sm:block overflow-x-auto">
+                        <table className="min-w-full bg-white border border-blue-200 shadow rounded-xl">
+                            <thead>
+                                <tr className="bg-blue-100">
+                                    <th className="p-2 text-left">Date</th>
+                                    <th className="p-2 text-left">Nom</th>
+                                    <th className="p-2 text-left">Téléphone</th>
+                                    <th className="p-2 text-left">Départ</th>
+                                    <th className="p-2 text-left">Arrivée</th>
+                                    <th className="p-2 text-left">Statut</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {loadingList ? (
+                                    <tr>
+                                        <td colSpan={6} className="p-4 text-center text-gray-400">Chargement…</td>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    {nouvelles.map(resa => (
+                                ) : nouvelles.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} className="p-4 text-center text-gray-400">Aucune nouvelle réservation.</td>
+                                    </tr>
+                                ) : (
+                                    nouvelles.map(resa => (
                                         <tr
                                             key={resa.id}
                                             className="border-b cursor-pointer hover:bg-blue-50 transition"
@@ -140,44 +178,88 @@ export default function AdminDashboard() {
                                             <td className="p-2">{resa.arrival}</td>
                                             <td className="p-2"><StatusBadge status={resa.status} /></td>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
                     </div>
-                )}
+                </section>
 
-                {/* Autres réservations */}
-                <div className="overflow-x-auto">
-                    <table className="min-w-full bg-white border border-gray-200 shadow rounded-xl">
-                        <thead>
-                            <tr className="bg-gray-100">
-                                <th className="p-2 text-left">Date</th>
-                                <th className="p-2 text-left">Nom</th>
-                                <th className="p-2 text-left">Téléphone</th>
-                                <th className="p-2 text-left">Départ</th>
-                                <th className="p-2 text-left">Arrivée</th>
-                                <th className="p-2 text-left">Statut</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {autres.map(resa => (
-                                <tr
+                {/* SECTION RÉSERVATIONS TRAITÉES/ANNULÉES */}
+                <section>
+                    <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                        <span role="img" aria-label="history">📦</span>
+                        Historique ({traitees.length})
+                    </h2>
+
+                    {/* Mobile : cards */}
+                    <div className="flex flex-col gap-4 sm:hidden">
+                        {loadingList ? (
+                            <div className="text-center text-gray-400">Chargement…</div>
+                        ) : traitees.length === 0 ? (
+                            <div className="text-center text-gray-400">Aucun historique.</div>
+                        ) : (
+                            traitees.map(resa => (
+                                <div
                                     key={resa.id}
-                                    className="border-b cursor-pointer hover:bg-gray-50 transition"
+                                    className="bg-gray-50 border border-gray-200 shadow rounded-xl p-4"
                                     onClick={() => setSelected(resa)}
                                 >
-                                    <td className="p-2 text-xs">{resa.date ? new Date(resa.date).toLocaleString("fr-FR") : "-"}</td>
-                                    <td className="p-2">{resa.name}</td>
-                                    <td className="p-2">{resa.phone}</td>
-                                    <td className="p-2">{resa.departure}</td>
-                                    <td className="p-2">{resa.arrival}</td>
-                                    <td className="p-2"><StatusBadge status={resa.status} /></td>
+                                    <div className="flex justify-between items-center mb-1">
+                                        <span className="font-bold text-base">{resa.name}</span>
+                                        <StatusBadge status={resa.status} />
+                                    </div>
+                                    <div className="text-xs text-gray-500 mb-2">{resa.date ? new Date(resa.date).toLocaleString("fr-FR") : "-"}</div>
+                                    <div className="text-sm"><span className="font-semibold">Départ :</span> {resa.departure}</div>
+                                    <div className="text-sm"><span className="font-semibold">Arrivée :</span> {resa.arrival}</div>
+                                    <div className="text-sm"><span className="font-semibold">Téléphone :</span> {resa.phone}</div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+
+                    {/* Desktop : tableau */}
+                    <div className="hidden sm:block overflow-x-auto">
+                        <table className="min-w-full bg-white border border-gray-200 shadow rounded-xl">
+                            <thead>
+                                <tr className="bg-gray-100">
+                                    <th className="p-2 text-left">Date</th>
+                                    <th className="p-2 text-left">Nom</th>
+                                    <th className="p-2 text-left">Téléphone</th>
+                                    <th className="p-2 text-left">Départ</th>
+                                    <th className="p-2 text-left">Arrivée</th>
+                                    <th className="p-2 text-left">Statut</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                            </thead>
+                            <tbody>
+                                {loadingList ? (
+                                    <tr>
+                                        <td colSpan={6} className="p-4 text-center text-gray-400">Chargement…</td>
+                                    </tr>
+                                ) : traitees.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} className="p-4 text-center text-gray-400">Aucun historique.</td>
+                                    </tr>
+                                ) : (
+                                    traitees.map(resa => (
+                                        <tr
+                                            key={resa.id}
+                                            className="border-b cursor-pointer hover:bg-gray-50 transition"
+                                            onClick={() => setSelected(resa)}
+                                        >
+                                            <td className="p-2 text-xs">{resa.date ? new Date(resa.date).toLocaleString("fr-FR") : "-"}</td>
+                                            <td className="p-2">{resa.name}</td>
+                                            <td className="p-2">{resa.phone}</td>
+                                            <td className="p-2">{resa.departure}</td>
+                                            <td className="p-2">{resa.arrival}</td>
+                                            <td className="p-2"><StatusBadge status={resa.status} /></td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
 
                 {/* Modale détail/édition */}
                 {selected && (

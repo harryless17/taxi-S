@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import StickyWhatsAppButton from "./components/StickyWhatsAppButton";
-
-
-
-import "./globals.css";
+import './globals.css';
 import StickyPhoneButton from "@/app/components/StickyPhoneButton";
 import StickyDock from "@/app/components/StickyDock";
 
