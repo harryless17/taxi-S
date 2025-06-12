@@ -1,6 +1,6 @@
-'use client';
-import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { supabase } from "@/utils/supabaseClient";
 
 function getDefaultDateTime() {
     const now = new Date();
@@ -37,14 +37,35 @@ const defaultForm: BookingFormData = {
     bagages: "",
 };
 
+// Fonction réutilisable pour insérer dans Supabase
+async function saveReservation(form: BookingFormData) {
+    const { nom, tel, depart, arrivee, arrets, date, passagers, bagages } = form;
+    const { error } = await supabase.from('reservations').insert([
+        {
+            name: nom,
+            phone: tel,
+            departure: depart,
+            arrival: arrivee,
+            stops: arrets || null,
+            date: date,
+            passengers: passagers ? Number(passagers) : null,
+            luggages: bagages ? Number(bagages) : null,
+            status: "nouveau",
+        }
+    ]);
+    return error;
+}
+
 export default function BookingForm() {
     const [form, setForm] = useState<BookingFormData>(defaultForm);
     const [sent, setSent] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [success, setSuccess] = useState(false);
 
     useEffect(() => {
         if (typeof window === "undefined") return;
 
-        // 1. Query params
+        // Query params
         const params = new URLSearchParams(window.location.search);
         const fromUrl: Partial<BookingFormData> = {
             nom: params.get("nom") || undefined,
@@ -53,17 +74,17 @@ export default function BookingForm() {
             arrivee: params.get("arrivee") || undefined,
             date: params.get("date") || undefined,
             passagers: params.get("passagers") || undefined,
+            arrets: params.get("arrets") || undefined,
             bagages: params.get("bagages") || undefined,
         };
 
-        // 2. localStorage
+        // localStorage
         let fromStorage: Partial<BookingFormData> = {};
         try {
             const last = window.localStorage.getItem('taxi-last-booking');
             if (last) fromStorage = JSON.parse(last);
-        } catch { /* ignore */ }
+        } catch { }
 
-        // 3. Fusion priorité URL > Storage > Defaults
         setForm({
             nom: fromUrl.nom ?? fromStorage.nom ?? "",
             tel: fromUrl.tel ?? fromStorage.tel ?? "",
@@ -71,30 +92,54 @@ export default function BookingForm() {
             arrivee: fromUrl.arrivee ?? fromStorage.arrivee ?? "",
             date: fromUrl.date ?? fromStorage.date ?? getDefaultDateTime(),
             passagers: fromUrl.passagers ?? fromStorage.passagers ?? "",
+            arrets: fromUrl.arrets ?? fromStorage.arrets ?? "",
             bagages: fromUrl.bagages ?? fromStorage.bagages ?? "",
         });
     }, []);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (window.navigator.vibrate) window.navigator.vibrate(80);
-        setSent(true);
-        setTimeout(() => {
-            window.localStorage.setItem('taxi-last-booking', JSON.stringify(form));
-            const msg = encodeURIComponent(
-                `Bonjour, je souhaite réserver un taxi.\nNom : ${form.nom}\nTéléphone : ${form.tel}\nDépart : ${form.depart}\nArrivée : ${form.arrivee}\nArrêts : ${form.arrets}\nDate/Heure : ${form.date}\nPassagers : ${form.passagers}\nBagages : ${form.bagages}`
-            );
+        setLoading(true);
+        setSent(false);
+        setSuccess(false);
 
-            window.open(`https://wa.me/33615392250?text=${msg}`, '_blank');
-            setSent(false);
-        }, 800);
+        // 1. Enregistrement Supabase
+        const error = await saveReservation(form);
+
+        if (error) {
+            setLoading(false);
+            alert("Erreur lors de l'enregistrement en base ! Merci de réessayer ou contactez-nous par WhatsApp.");
+            return;
+        }
+
+        // 2. Stockage local
+        window.localStorage.setItem('taxi-last-booking', JSON.stringify(form));
+
+        // 3. Redirection WhatsApp
+        const msg = encodeURIComponent(
+            `Bonjour, je souhaite réserver un taxi.\nNom : ${form.nom}\nTéléphone : ${form.tel}\nDépart : ${form.depart}\nArrivée : ${form.arrivee}\nArrêts : ${form.arrets}\nDate/Heure : ${form.date}\nPassagers : ${form.passagers}\nBagages : ${form.bagages}`
+        );
+
+        setForm(defaultForm);
+        setLoading(false);
+        setSent(true); // Affiche l’animation de redirection WhatsApp
+
+        // Ouvre WhatsApp dans un nouvel onglet
+        window.open(`https://wa.me/33615392250?text=${msg}`, '_blank');
+
+        // Masque l’animation “Redirection…” après 2 secondes
+        setTimeout(() => setSent(false), 2000);
+
+        // (optionnel) Affiche le message de succès plus longtemps
+        setSuccess(true);
+        setTimeout(() => setSuccess(false), 5000);
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setForm(f => ({ ...f, [e.target.name]: e.target.value }));
     };
 
-    // Bouton pré-remplir rapide
     const handleQuickFill = () => {
         setForm(f => ({
             ...f,
@@ -122,7 +167,6 @@ export default function BookingForm() {
                 <input name="depart" required className="w-full border border-blue-200 rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 md:col-span-2" placeholder="Départ" value={form.depart} onChange={handleChange} />
                 <input name="arrivee" required className="w-full border border-blue-200 rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 md:col-span-2" placeholder="Arrivée" value={form.arrivee} onChange={handleChange} />
                 <input name="arrets" className="w-full border border-blue-200 rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 md:col-span-2" placeholder="Arrêts (optionnel) – ex : 12 rue Victor Hugo" value={form.arrets} onChange={handleChange} />
-
                 <input
                     name="date"
                     required
@@ -152,13 +196,25 @@ export default function BookingForm() {
                 />
                 <button
                     type="submit"
-                    className="md:col-span-2 mt-4 w-full bg-blue-700 text-white font-bold py-3 rounded-xl hover:bg-blue-800 shadow hover:scale-105 transition"
+                    className="md:col-span-2 mt-4 w-full bg-blue-700 text-white font-bold py-3 rounded-xl hover:bg-blue-800 shadow hover:scale-105 transition disabled:bg-blue-400"
+                    disabled={loading}
                 >
-                    Réserver via WhatsApp
+                    {loading ? "Envoi en cours…" : "Réserver via WhatsApp"}
                 </button>
+                {success && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className="md:col-span-2 mt-4 w-full flex flex-col items-center gap-2 bg-green-50 border border-green-200 text-green-700 py-3 rounded-xl shadow"
+                    >
+                        <span className="text-2xl">✅</span>
+                        <span>Votre demande a bien été prise en compte.<br />Vous serez contacté rapidement.</span>
+                    </motion.div>
+                )}
             </form>
 
-            {/* Mention assurance professionnelle */}
+            {/* Assurance */}
             <div className="flex items-center gap-2 mt-4 text-green-700 text-sm font-semibold justify-center">
                 <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24">
                     <path d="M12 22C7.03 22 3 17.97 3 13C3 9.13 5.94 5.68 10.44 3.27C11.13 2.89 12.08 2.89 12.77 3.27C17.27 5.68 20.21 9.13 20.21 13C20.21 17.97 16.18 22 12 22Z" stroke="currentColor" strokeWidth="2" />

@@ -1,4 +1,9 @@
 @import "tailwindcss";
+@import "./tailwind-base.css";
+@import "./tailwind-components.css";
+@import "./tailwind-utilities.css";
+
+
 
 :root {
   --background: #ffffff;
@@ -25,6 +30,13 @@
 a.btn-whatsapp,
 a.btn-whatsapp:hover,
 a.btn-whatsapp:focus {
+  color: #fff !important;
+  text-decoration: none;
+}
+
+a.btn-call,
+a.btn-call:hover,
+a.btn-call:focus {
   color: #fff !important;
   text-decoration: none;
 }
