@@ -26,16 +26,18 @@ type BookingFormData = {
     bagages: string;
 };
 
-const defaultForm: BookingFormData = {
-    nom: "",
-    tel: "",
-    depart: "",
-    arrivee: "",
-    arrets: "",
-    date: getDefaultDateTime(),
-    passagers: "",
-    bagages: "",
-};
+function getDefaultForm(): BookingFormData {
+    return {
+        nom: "",
+        tel: "",
+        depart: "",
+        arrivee: "",
+        arrets: "",
+        date: getDefaultDateTime(),
+        passagers: "",
+        bagages: "",
+    };
+}
 
 // Fonction réutilisable pour insérer dans Supabase
 async function saveReservation(form: BookingFormData) {
@@ -57,7 +59,7 @@ async function saveReservation(form: BookingFormData) {
 }
 
 export default function BookingForm() {
-    const [form, setForm] = useState<BookingFormData>(defaultForm);
+    const [form, setForm] = useState<BookingFormData>(() => getDefaultForm());
     const [sent, setSent] = useState(false);
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
@@ -121,7 +123,7 @@ export default function BookingForm() {
             `Bonjour, je souhaite réserver un taxi.\nNom : ${form.nom}\nTéléphone : ${form.tel}\nDépart : ${form.depart}\nArrivée : ${form.arrivee}\nArrêts : ${form.arrets}\nDate/Heure : ${form.date}\nPassagers : ${form.passagers}\nBagages : ${form.bagages}`
         );
 
-        setForm(defaultForm);
+        setForm(getDefaultForm());
         setLoading(false);
         setSent(true); // Affiche l’animation de redirection WhatsApp
 
