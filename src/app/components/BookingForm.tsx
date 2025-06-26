@@ -26,6 +26,22 @@ type BookingFormData = {
     bagages: string;
 };
 
+type ValidationErrors = {
+    nom?: string;
+    tel?: string;
+    depart?: string;
+    arrivee?: string;
+    date?: string;
+    passagers?: string;
+};
+
+type AddressSuggestion = {
+    display_name: string;
+    lat: string;
+    lon: string;
+    type: string;
+};
+
 const defaultForm: BookingFormData = {
     nom: "",
     tel: "",
@@ -36,6 +52,112 @@ const defaultForm: BookingFormData = {
     passagers: "",
     bagages: "",
 };
+
+// Adresses populaires pour les suggestions rapides (fallback)
+const popularAddresses = [
+    "Aéroport Charles de Gaulle (CDG)",
+    "Aéroport Orly (ORY)",
+    "Gare du Nord",
+    "Gare de Lyon",
+    "Gare Montparnasse",
+    "Tour Eiffel",
+    "Arc de Triomphe",
+    "Champs-Élysées",
+    "Louvre",
+    "Notre-Dame de Paris",
+    "Sacré-Cœur",
+    "Disneyland Paris",
+    "Versailles",
+];
+
+// Fonction pour récupérer les suggestions d'adresses via API
+async function fetchAddressSuggestions(query: string): Promise<AddressSuggestion[]> {
+    if (!query || query.length < 3) return [];
+
+    try {
+        // Utilisation de l'API Nominatim (OpenStreetMap) - gratuite et fiable
+        const response = await fetch(
+            `https://nominatim.openstreetmap.org/search?` +
+            `q=${encodeURIComponent(query + ', France')}&` +
+            `format=json&` +
+            `limit=8&` +
+            `addressdetails=1&` +
+            `countrycodes=fr&` +
+            `accept-language=fr`
+        );
+
+        if (!response.ok) {
+            console.warn('Erreur API Nominatim:', response.status);
+            return [];
+        }
+
+        const data = await response.json();
+        return data.map((item: any) => ({
+            display_name: item.display_name,
+            lat: item.lat,
+            lon: item.lon,
+            type: item.type
+        }));
+    } catch (error) {
+        console.warn('Erreur lors de la récupération des suggestions:', error);
+        return [];
+    }
+}
+
+// Fonction pour filtrer les adresses populaires
+function filterPopularAddresses(query: string): string[] {
+    if (!query || query.length < 2) return [];
+
+    const value = query.toLowerCase();
+    return popularAddresses.filter(addr =>
+        addr.toLowerCase().includes(value)
+    ).slice(0, 3);
+}
+
+// Fonction de validation
+function validateForm(form: BookingFormData): ValidationErrors {
+    const errors: ValidationErrors = {};
+
+    if (!form.nom.trim()) {
+        errors.nom = "Le nom est requis";
+    } else if (form.nom.length < 2) {
+        errors.nom = "Le nom doit contenir au moins 2 caractères";
+    }
+
+    if (!form.tel.trim()) {
+        errors.tel = "Le téléphone est requis";
+    } else if (!/^(?:(?:\+|00)33|0)\s*[1-9](?:[\s.-]*\d{2}){4}$/.test(form.tel)) {
+        errors.tel = "Format de téléphone invalide";
+    }
+
+    if (!form.depart.trim()) {
+        errors.depart = "L'adresse de départ est requise";
+    }
+
+    if (!form.arrivee.trim()) {
+        errors.arrivee = "L'adresse d'arrivée est requise";
+    }
+
+    if (form.depart.trim() && form.arrivee.trim() && form.depart.toLowerCase() === form.arrivee.toLowerCase()) {
+        errors.arrivee = "L'adresse d'arrivée doit être différente du départ";
+    }
+
+    if (!form.date) {
+        errors.date = "La date et heure sont requises";
+    } else {
+        const selectedDate = new Date(form.date);
+        const now = new Date();
+        if (selectedDate <= now) {
+            errors.date = "La date doit être dans le futur";
+        }
+    }
+
+    if (form.passagers && (parseInt(form.passagers) < 1 || parseInt(form.passagers) > 7)) {
+        errors.passagers = "Entre 1 et 7 passagers";
+    }
+
+    return errors;
+}
 
 // Fonction réutilisable pour insérer dans Supabase
 async function saveReservation(form: BookingFormData) {
@@ -61,6 +183,11 @@ export default function BookingForm() {
     const [sent, setSent] = useState(false);
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
+    const [errors, setErrors] = useState<ValidationErrors>({});
+    const [showSuggestions, setShowSuggestions] = useState<'depart' | 'arrivee' | null>(null);
+    const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
+    const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+    const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         if (typeof window === "undefined") return;
@@ -97,8 +224,62 @@ export default function BookingForm() {
         });
     }, []);
 
+    // Validation en temps réel
+    useEffect(() => {
+        const validationErrors = validateForm(form);
+        setErrors(validationErrors);
+    }, [form]);
+
+    // Fonction pour récupérer les suggestions avec debounce
+    const fetchSuggestions = async (query: string, field: 'depart' | 'arrivee') => {
+        if (query.length < 2) {
+            setSuggestions([]);
+            return;
+        }
+
+        setLoadingSuggestions(true);
+
+        try {
+            // Récupération des suggestions via API
+            const apiSuggestions = await fetchAddressSuggestions(query);
+
+            // Combinaison avec les adresses populaires
+            const popularMatches = filterPopularAddresses(query);
+            const combinedSuggestions = [
+                ...popularMatches.map(addr => ({
+                    display_name: addr,
+                    lat: '',
+                    lon: '',
+                    type: 'popular'
+                })),
+                ...apiSuggestions
+            ];
+
+            setSuggestions(combinedSuggestions.slice(0, 8));
+        } catch (error) {
+            console.warn('Erreur lors de la récupération des suggestions:', error);
+            // Fallback vers les adresses populaires
+            const popularMatches = filterPopularAddresses(query);
+            setSuggestions(popularMatches.map(addr => ({
+                display_name: addr,
+                lat: '',
+                lon: '',
+                type: 'popular'
+            })));
+        } finally {
+            setLoadingSuggestions(false);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        const validationErrors = validateForm(form);
+        if (Object.keys(validationErrors).length > 0) {
+            setErrors(validationErrors);
+            return;
+        }
+
         if (window.navigator.vibrate) window.navigator.vibrate(80);
         setLoading(true);
         setSent(false);
@@ -123,12 +304,12 @@ export default function BookingForm() {
 
         setForm(defaultForm);
         setLoading(false);
-        setSent(true); // Affiche l’animation de redirection WhatsApp
+        setSent(true); // Affiche l'animation de redirection WhatsApp
 
         // Ouvre WhatsApp dans un nouvel onglet
         window.open(`https://wa.me/33615392250?text=${msg}`, '_blank');
 
-        // Masque l’animation “Redirection…” après 2 secondes
+        // Masque l'animation "Redirection…" après 2 secondes
         setTimeout(() => setSent(false), 2000);
 
         // (optionnel) Affiche le message de succès plus longtemps
@@ -137,7 +318,27 @@ export default function BookingForm() {
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+        const { name, value } = e.target;
+        setForm(f => ({ ...f, [name]: value }));
+
+        // Efface l'erreur quand l'utilisateur commence à taper
+        if (errors[name as keyof ValidationErrors]) {
+            setErrors(prev => ({ ...prev, [name]: undefined }));
+        }
+
+        // Gestion des suggestions pour les champs d'adresse
+        if ((name === 'depart' || name === 'arrivee') && showSuggestions === name) {
+            // Debounce pour éviter trop d'appels API
+            if (debounceTimer) {
+                clearTimeout(debounceTimer);
+            }
+
+            const timer = setTimeout(() => {
+                fetchSuggestions(value, name as 'depart' | 'arrivee');
+            }, 300);
+
+            setDebounceTimer(timer);
+        }
     };
 
     const handleQuickFill = () => {
@@ -147,6 +348,26 @@ export default function BookingForm() {
             depart: "Paris, France",
             passagers: ""
         }));
+    };
+
+    const handleAddressSuggestion = (suggestion: AddressSuggestion, field: 'depart' | 'arrivee') => {
+        setForm(f => ({ ...f, [field]: suggestion.display_name }));
+        setShowSuggestions(null);
+        setSuggestions([]);
+    };
+
+    const handleFocus = (field: 'depart' | 'arrivee') => {
+        setShowSuggestions(field);
+        if (form[field].length >= 2) {
+            fetchSuggestions(form[field], field);
+        }
+    };
+
+    const handleBlur = () => {
+        setTimeout(() => {
+            setShowSuggestions(null);
+            setSuggestions([]);
+        }, 200);
     };
 
     return (
@@ -160,33 +381,271 @@ export default function BookingForm() {
             <h2 className="text-2xl font-bold text-blue-700 mb-4">Demande de réservation</h2>
             <form
                 onSubmit={handleSubmit}
-                className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                className="grid grid-cols-1 md:grid-cols-2 gap-6"
             >
-                <input name="nom" required className="w-full border border-blue-200 rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Nom" value={form.nom} onChange={handleChange} />
-                <input name="tel" required type="tel" className="w-full border border-blue-200 rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Téléphone" value={form.tel} onChange={handleChange} />
-                <input name="depart" required className="w-full border border-blue-200 rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 md:col-span-2" placeholder="Départ" value={form.depart} onChange={handleChange} />
-                <input name="arrivee" required className="w-full border border-blue-200 rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 md:col-span-2" placeholder="Arrivée" value={form.arrivee} onChange={handleChange} />
+                {/* Nom */}
+                <div className="flex flex-col gap-2 md:col-span-1">
+                    <div className="relative">
+                        <input
+                            name="nom"
+                            required
+                            className={`w-full border rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 transition-colors pr-10 ${errors.nom ? 'border-red-400 focus:ring-red-400' : 'border-blue-200 focus:ring-blue-400'}`}
+                            placeholder="Nom"
+                            value={form.nom}
+                            onChange={handleChange}
+                        />
+                        {errors.nom && (
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 pointer-events-none">
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
+                            </span>
+                        )}
+                    </div>
+                    {errors.nom && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="flex items-center gap-2 bg-red-100 border border-red-300 text-red-700 text-sm font-semibold rounded px-3 py-2 mt-1"
+                        >
+                            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
+                            <span>{errors.nom}</span>
+                        </motion.div>
+                    )}
+                </div>
+
+                {/* Téléphone */}
+                <div className="flex flex-col gap-2 md:col-span-1">
+                    <div className="relative">
+                        <input
+                            name="tel"
+                            required
+                            type="tel"
+                            className={`w-full border rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 transition-colors pr-10 ${errors.tel ? 'border-red-400 focus:ring-red-400' : 'border-blue-200 focus:ring-blue-400'}`}
+                            placeholder="Téléphone"
+                            value={form.tel}
+                            onChange={handleChange}
+                        />
+                        {errors.tel && (
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 pointer-events-none">
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
+                            </span>
+                        )}
+                    </div>
+                    {errors.tel && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="flex items-center gap-2 bg-red-100 border border-red-300 text-red-700 text-sm font-semibold rounded px-3 py-2 mt-1"
+                        >
+                            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
+                            <span>{errors.tel}</span>
+                        </motion.div>
+                    )}
+                </div>
+
+                {/* Départ */}
+                <div className="flex flex-col gap-2 md:col-span-2">
+                    <div className="relative">
+                        <input
+                            name="depart"
+                            required
+                            className={`w-full border rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 transition-colors pr-10 ${errors.depart ? 'border-red-400 focus:ring-red-400' : 'border-blue-200 focus:ring-blue-400'}`}
+                            placeholder="Départ"
+                            value={form.depart}
+                            onChange={handleChange}
+                            onFocus={() => handleFocus('depart')}
+                            onBlur={handleBlur}
+                        />
+                        {errors.depart && (
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 pointer-events-none">
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
+                            </span>
+                        )}
+                        {showSuggestions === 'depart' && (suggestions.length > 0 || loadingSuggestions) && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="absolute top-full left-0 right-0 bg-white border-2 border-blue-200 rounded-xl shadow-xl z-20 mt-2 max-h-48 overflow-y-auto"
+                            >
+                                {loadingSuggestions ? (
+                                    <div className="flex items-center justify-center py-4 text-gray-500">
+                                        <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                        </svg>
+                                        Recherche en cours...
+                                    </div>
+                                ) : (
+                                    suggestions.map((suggestion, index) => (
+                                        <button
+                                            key={index}
+                                            type="button"
+                                            className="w-full text-left px-4 py-3 hover:bg-blue-50 text-gray-700 font-medium border-b border-gray-100 last:border-b-0 transition-colors duration-150"
+                                            onClick={() => handleAddressSuggestion(suggestion, 'depart')}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <svg className="w-4 h-4 text-blue-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                </svg>
+                                                <div className="flex-1">
+                                                    <span className="text-sm">{suggestion.display_name}</span>
+                                                    {suggestion.type === 'popular' && (
+                                                        <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-600 text-xs rounded-full">Populaire</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </button>
+                                    ))
+                                )}
+                            </motion.div>
+                        )}
+                    </div>
+                    {errors.depart && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="flex items-center gap-2 bg-red-100 border border-red-300 text-red-700 text-sm font-semibold rounded px-3 py-2 mt-1"
+                        >
+                            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
+                            <span>{errors.depart}</span>
+                        </motion.div>
+                    )}
+                </div>
+
+                {/* Arrivée */}
+                <div className="flex flex-col gap-2 md:col-span-2">
+                    <div className="relative">
+                        <input
+                            name="arrivee"
+                            required
+                            className={`w-full border rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 transition-colors pr-10 ${errors.arrivee ? 'border-red-400 focus:ring-red-400' : 'border-blue-200 focus:ring-blue-400'}`}
+                            placeholder="Arrivée"
+                            value={form.arrivee}
+                            onChange={handleChange}
+                            onFocus={() => handleFocus('arrivee')}
+                            onBlur={handleBlur}
+                        />
+                        {errors.arrivee && (
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 pointer-events-none">
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
+                            </span>
+                        )}
+                        {showSuggestions === 'arrivee' && (suggestions.length > 0 || loadingSuggestions) && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="absolute top-full left-0 right-0 bg-white border-2 border-blue-200 rounded-xl shadow-xl z-20 mt-2 max-h-48 overflow-y-auto"
+                            >
+                                {loadingSuggestions ? (
+                                    <div className="flex items-center justify-center py-4 text-gray-500">
+                                        <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                        </svg>
+                                        Recherche en cours...
+                                    </div>
+                                ) : (
+                                    suggestions.map((suggestion, index) => (
+                                        <button
+                                            key={index}
+                                            type="button"
+                                            className="w-full text-left px-4 py-3 hover:bg-blue-50 text-gray-700 font-medium border-b border-gray-100 last:border-b-0 transition-colors duration-150"
+                                            onClick={() => handleAddressSuggestion(suggestion, 'arrivee')}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <svg className="w-4 h-4 text-blue-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                </svg>
+                                                <div className="flex-1">
+                                                    <span className="text-sm">{suggestion.display_name}</span>
+                                                    {suggestion.type === 'popular' && (
+                                                        <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-600 text-xs rounded-full">Populaire</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </button>
+                                    ))
+                                )}
+                            </motion.div>
+                        )}
+                    </div>
+                    {errors.arrivee && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="flex items-center gap-2 bg-red-100 border border-red-300 text-red-700 text-sm font-semibold rounded px-3 py-2 mt-1"
+                        >
+                            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
+                            <span>{errors.arrivee}</span>
+                        </motion.div>
+                    )}
+                </div>
+
                 <input name="arrets" className="w-full border border-blue-200 rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 md:col-span-2" placeholder="Arrêts (optionnel) – ex : 12 rue Victor Hugo" value={form.arrets} onChange={handleChange} />
-                <input
-                    name="date"
-                    required
-                    type="datetime-local"
-                    className="w-full border border-blue-200 rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 md:col-span-2"
-                    placeholder="Date et heure"
-                    value={form.date}
-                    min={getDefaultDateTime()}
-                    onChange={handleChange}
-                />
-                <input
-                    name="passagers"
-                    type="number"
-                    min="1"
-                    max="7"
-                    className="w-full border border-blue-200 rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    placeholder="Passagers"
-                    value={form.passagers}
-                    onChange={handleChange}
-                />
+
+                {/* Date et heure */}
+                <div className="flex flex-col gap-2 md:col-span-2">
+                    <div className="relative">
+                        <input
+                            name="date"
+                            required
+                            type="datetime-local"
+                            className={`w-full border rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 transition-colors pr-10 ${errors.date ? 'border-red-400 focus:ring-red-400' : 'border-blue-200 focus:ring-blue-400'}`}
+                            placeholder="Date et heure"
+                            value={form.date}
+                            min={getDefaultDateTime()}
+                            onChange={handleChange}
+                        />
+                        {errors.date && (
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 pointer-events-none">
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
+                            </span>
+                        )}
+                    </div>
+                    {errors.date && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="flex items-center gap-2 bg-red-100 border border-red-300 text-red-700 text-sm font-semibold rounded px-3 py-2 mt-1"
+                        >
+                            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
+                            <span>{errors.date}</span>
+                        </motion.div>
+                    )}
+                </div>
+
+                {/* Passagers */}
+                <div className="flex flex-col gap-2 md:col-span-1">
+                    <div className="relative">
+                        <input
+                            name="passagers"
+                            type="number"
+                            min="1"
+                            max="7"
+                            className={`w-full border rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 transition-colors pr-10 ${errors.passagers ? 'border-red-400 focus:ring-red-400' : 'border-blue-200 focus:ring-blue-400'}`}
+                            placeholder="Passagers"
+                            value={form.passagers}
+                            onChange={handleChange}
+                        />
+                        {errors.passagers && (
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 pointer-events-none">
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
+                            </span>
+                        )}
+                    </div>
+                    {errors.passagers && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="flex items-center gap-2 bg-red-100 border border-red-300 text-red-700 text-sm font-semibold rounded px-3 py-2 mt-1"
+                        >
+                            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
+                            <span>{errors.passagers}</span>
+                        </motion.div>
+                    )}
+                </div>
+
                 <input
                     name="bagages"
                     className="w-full border border-blue-200 rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -194,13 +653,37 @@ export default function BookingForm() {
                     value={form.bagages}
                     onChange={handleChange}
                 />
+
+                {/* Indicateur de progression */}
+                <div className="md:col-span-2 mt-4">
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <div className="flex-1 bg-gray-200 rounded-full h-2">
+                            <motion.div
+                                className="bg-blue-500 h-2 rounded-full"
+                                initial={{ width: 0 }}
+                                animate={{
+                                    width: `${Math.min(100, Object.keys(form).filter(key => form[key as keyof BookingFormData]).length * 12.5)}%`
+                                }}
+                                transition={{ duration: 0.5 }}
+                            />
+                        </div>
+                        <span className="text-xs">
+                            {Object.keys(form).filter(key => form[key as keyof BookingFormData]).length}/8
+                        </span>
+                    </div>
+                </div>
+
                 <button
                     type="submit"
-                    className="md:col-span-2 mt-4 w-full bg-blue-700 text-white font-bold py-3 rounded-xl hover:bg-blue-800 shadow hover:scale-105 transition disabled:bg-blue-400"
-                    disabled={loading}
+                    className={`md:col-span-2 mt-6 w-full font-bold py-3 rounded-xl shadow transition-all duration-200 ${Object.keys(errors).length > 0 || loading
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : 'bg-blue-700 hover:bg-blue-800 hover:scale-105 text-white'
+                        }`}
+                    disabled={loading || Object.keys(errors).length > 0}
                 >
                     {loading ? "Envoi en cours…" : "Réserver via WhatsApp"}
                 </button>
+
                 {success && (
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
@@ -231,9 +714,10 @@ export default function BookingForm() {
             >
                 Pré-remplir pour un départ immédiat à Paris
             </button>
+
             {/* RGPD & carte de visite */}
             <p className="text-xs text-gray-400 mt-2 text-center">
-                Vos données ne sont jamais stockées : la réservation se fait uniquement via WhatsApp. <span className="inline-block ml-1">🔒</span>
+                Vos données ne sont jamais stockées : la réservation se fait uniquement via WhatsApp. <span className="inline-block ml-1">🔒</span>
             </p>
             <a
                 href="https://wa.me/33615392250?text=Merci%20de%20m'envoyer%20votre%20carte%20de%20visite%20taxi."
@@ -243,6 +727,7 @@ export default function BookingForm() {
             >
                 Recevoir la carte de visite taxi
             </a>
+
             {/* Animation feedback */}
             <AnimatePresence>
                 {sent && (
