@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/utils/supabaseClient";
 
+
 function getDefaultDateTime() {
     const now = new Date();
     now.setHours(now.getHours() + 1);
@@ -42,121 +43,17 @@ type AddressSuggestion = {
     type: string;
 };
 
-const defaultForm: BookingFormData = {
-    nom: "",
-    tel: "",
-    depart: "",
-    arrivee: "",
-    arrets: "",
-    date: getDefaultDateTime(),
-    passagers: "",
-    bagages: "",
-};
-
-// Adresses populaires pour les suggestions rapides (fallback)
-const popularAddresses = [
-    "Aéroport Charles de Gaulle (CDG)",
-    "Aéroport Orly (ORY)",
-    "Gare du Nord",
-    "Gare de Lyon",
-    "Gare Montparnasse",
-    "Tour Eiffel",
-    "Arc de Triomphe",
-    "Champs-Élysées",
-    "Louvre",
-    "Notre-Dame de Paris",
-    "Sacré-Cœur",
-    "Disneyland Paris",
-    "Versailles",
-];
-
-// Fonction pour récupérer les suggestions d'adresses via API
-async function fetchAddressSuggestions(query: string): Promise<AddressSuggestion[]> {
-    if (!query || query.length < 3) return [];
-
-    try {
-        // Utilisation de l'API Nominatim (OpenStreetMap) - gratuite et fiable
-        const response = await fetch(
-            `https://nominatim.openstreetmap.org/search?` +
-            `q=${encodeURIComponent(query + ', France')}&` +
-            `format=json&` +
-            `limit=8&` +
-            `addressdetails=1&` +
-            `countrycodes=fr&` +
-            `accept-language=fr`
-        );
-
-        if (!response.ok) {
-            console.warn('Erreur API Nominatim:', response.status);
-            return [];
-        }
-
-        const data = await response.json();
-        return data.map((item: any) => ({
-            display_name: item.display_name,
-            lat: item.lat,
-            lon: item.lon,
-            type: item.type
-        }));
-    } catch (error) {
-        console.warn('Erreur lors de la récupération des suggestions:', error);
-        return [];
-    }
-}
-
-// Fonction pour filtrer les adresses populaires
-function filterPopularAddresses(query: string): string[] {
-    if (!query || query.length < 2) return [];
-
-    const value = query.toLowerCase();
-    return popularAddresses.filter(addr =>
-        addr.toLowerCase().includes(value)
-    ).slice(0, 3);
-}
-
-// Fonction de validation
-function validateForm(form: BookingFormData): ValidationErrors {
-    const errors: ValidationErrors = {};
-
-    if (!form.nom.trim()) {
-        errors.nom = "Le nom est requis";
-    } else if (form.nom.length < 2) {
-        errors.nom = "Le nom doit contenir au moins 2 caractères";
-    }
-
-    if (!form.tel.trim()) {
-        errors.tel = "Le téléphone est requis";
-    } else if (!/^(?:(?:\+|00)33|0)\s*[1-9](?:[\s.-]*\d{2}){4}$/.test(form.tel)) {
-        errors.tel = "Format de téléphone invalide";
-    }
-
-    if (!form.depart.trim()) {
-        errors.depart = "L'adresse de départ est requise";
-    }
-
-    if (!form.arrivee.trim()) {
-        errors.arrivee = "L'adresse d'arrivée est requise";
-    }
-
-    if (form.depart.trim() && form.arrivee.trim() && form.depart.toLowerCase() === form.arrivee.toLowerCase()) {
-        errors.arrivee = "L'adresse d'arrivée doit être différente du départ";
-    }
-
-    if (!form.date) {
-        errors.date = "La date et heure sont requises";
-    } else {
-        const selectedDate = new Date(form.date);
-        const now = new Date();
-        if (selectedDate <= now) {
-            errors.date = "La date doit être dans le futur";
-        }
-    }
-
-    if (form.passagers && (parseInt(form.passagers) < 1 || parseInt(form.passagers) > 7)) {
-        errors.passagers = "Entre 1 et 7 passagers";
-    }
-
-    return errors;
+function getDefaultForm(): BookingFormData {
+    return {
+        nom: "",
+        tel: "",
+        depart: "",
+        arrivee: "",
+        arrets: "",
+        date: getDefaultDateTime(),
+        passagers: "",
+        bagages: "",
+    };
 }
 
 // Fonction réutilisable pour insérer dans Supabase
@@ -179,7 +76,7 @@ async function saveReservation(form: BookingFormData) {
 }
 
 export default function BookingForm() {
-    const [form, setForm] = useState<BookingFormData>(defaultForm);
+    const [form, setForm] = useState<BookingFormData>(() => getDefaultForm());
     const [sent, setSent] = useState(false);
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
@@ -302,7 +199,7 @@ export default function BookingForm() {
             `Bonjour, je souhaite réserver un taxi.\nNom : ${form.nom}\nTéléphone : ${form.tel}\nDépart : ${form.depart}\nArrivée : ${form.arrivee}\nArrêts : ${form.arrets}\nDate/Heure : ${form.date}\nPassagers : ${form.passagers}\nBagages : ${form.bagages}`
         );
 
-        setForm(defaultForm);
+        setForm(getDefaultForm());
         setLoading(false);
         setSent(true); // Affiche l'animation de redirection WhatsApp
 
