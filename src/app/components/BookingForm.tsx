@@ -382,13 +382,15 @@ export default function BookingForm() {
 
     return (
         <motion.section
-            className="w-full max-w-2xl mt-10 bg-white rounded-2xl shadow-lg p-8"
+            className="w-full max-w-2xl mt-16 mb-16 glass-strong p-10 rounded-3xl shadow-2xl border border-primary/10"
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.7, ease: "easeOut" }}
+            transition={{ duration: 0.7, ease: 'easeOut' }}
         >
-            <h2 className="text-2xl font-bold text-blue-700 mb-4">Demande de réservation</h2>
+            <h2 className="text-4xl md:text-5xl font-black text-gradient mb-8 text-center">
+                Demande de réservation
+            </h2>
             <form
                 onSubmit={handleSubmit}
                 className="grid grid-cols-1 md:grid-cols-2 gap-6"
@@ -399,14 +401,14 @@ export default function BookingForm() {
                         <input
                             name="nom"
                             required
-                            className={`w-full border rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 transition-colors pr-10 ${showError('nom') ? 'border-red-400 focus:ring-red-400' : 'border-blue-200 focus:ring-blue-400'}`}
+                            className={`input-modern w-full pr-10 ${showError('nom') ? 'border-red-400 focus:ring-red-400' : ''}`}
                             placeholder="Nom"
                             value={form.nom}
                             onChange={handleChange}
                             onBlur={() => setTouched(t => ({ ...t, nom: true }))}
                         />
                         {showError('nom') && (
-                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 pointer-events-none">
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-400 pointer-events-none">
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
                             </span>
                         )}
@@ -415,7 +417,7 @@ export default function BookingForm() {
                         <motion.div
                             initial={{ opacity: 0, y: -5 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="flex items-center gap-2 bg-red-100 border border-red-300 text-red-700 text-sm font-semibold rounded px-3 py-2 mt-1"
+                            className="flex items-center gap-2 glass border border-red-400 text-red-400 text-sm font-semibold rounded px-3 py-2 mt-1"
                         >
                             <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
                             <span>{showError('nom')}</span>
@@ -430,14 +432,14 @@ export default function BookingForm() {
                             name="tel"
                             required
                             type="tel"
-                            className={`w-full border rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 transition-colors pr-10 ${showError('tel') ? 'border-red-400 focus:ring-red-400' : 'border-blue-200 focus:ring-blue-400'}`}
+                            className={`input-modern w-full pr-10 ${showError('tel') ? 'border-red-400 focus:ring-red-400' : ''}`}
                             placeholder="Téléphone"
                             value={form.tel}
                             onChange={handleChange}
                             onBlur={() => setTouched(t => ({ ...t, tel: true }))}
                         />
                         {showError('tel') && (
-                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 pointer-events-none">
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-400 pointer-events-none">
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
                             </span>
                         )}
@@ -446,7 +448,7 @@ export default function BookingForm() {
                         <motion.div
                             initial={{ opacity: 0, y: -5 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="flex items-center gap-2 bg-red-100 border border-red-300 text-red-700 text-sm font-semibold rounded px-3 py-2 mt-1"
+                            className="flex items-center gap-2 glass border border-red-400 text-red-400 text-sm font-semibold rounded px-3 py-2 mt-1"
                         >
                             <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
                             <span>{showError('tel')}</span>
@@ -460,7 +462,7 @@ export default function BookingForm() {
                         <input
                             name="depart"
                             required
-                            className={`w-full border rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 transition-colors pr-10 ${showError('depart') ? 'border-red-400 focus:ring-red-400' : 'border-blue-200 focus:ring-blue-400'}`}
+                            className={`input-modern w-full pr-10 ${showError('depart') ? 'border-red-400 focus:ring-red-400' : ''}`}
                             placeholder="Départ"
                             value={form.depart}
                             onChange={handleChange}
@@ -468,7 +470,7 @@ export default function BookingForm() {
                             onBlur={() => setTouched(t => ({ ...t, depart: true }))}
                         />
                         {showError('depart') && (
-                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 pointer-events-none">
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-400 pointer-events-none">
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
                             </span>
                         )}
@@ -516,7 +518,7 @@ export default function BookingForm() {
                         <motion.div
                             initial={{ opacity: 0, y: -5 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="flex items-center gap-2 bg-red-100 border border-red-300 text-red-700 text-sm font-semibold rounded px-3 py-2 mt-1"
+                            className="flex items-center gap-2 glass border border-red-400 text-red-400 text-sm font-semibold rounded px-3 py-2 mt-1"
                         >
                             <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
                             <span>{showError('depart')}</span>
@@ -530,7 +532,7 @@ export default function BookingForm() {
                         <input
                             name="arrivee"
                             required
-                            className={`w-full border rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 transition-colors pr-10 ${showError('arrivee') ? 'border-red-400 focus:ring-red-400' : 'border-blue-200 focus:ring-blue-400'}`}
+                            className={`input-modern w-full pr-10 ${showError('arrivee') ? 'border-red-400 focus:ring-red-400' : ''}`}
                             placeholder="Arrivée"
                             value={form.arrivee}
                             onChange={handleChange}
@@ -538,7 +540,7 @@ export default function BookingForm() {
                             onBlur={() => setTouched(t => ({ ...t, arrivee: true }))}
                         />
                         {showError('arrivee') && (
-                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 pointer-events-none">
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-400 pointer-events-none">
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
                             </span>
                         )}
@@ -586,7 +588,7 @@ export default function BookingForm() {
                         <motion.div
                             initial={{ opacity: 0, y: -5 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="flex items-center gap-2 bg-red-100 border border-red-300 text-red-700 text-sm font-semibold rounded px-3 py-2 mt-1"
+                            className="flex items-center gap-2 glass border border-red-400 text-red-400 text-sm font-semibold rounded px-3 py-2 mt-1"
                         >
                             <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
                             <span>{showError('arrivee')}</span>
@@ -594,7 +596,7 @@ export default function BookingForm() {
                     )}
                 </div>
 
-                <input name="arrets" className="w-full border border-blue-200 rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 md:col-span-2" placeholder="Arrêts (optionnel) – ex : 12 rue Victor Hugo" value={form.arrets} onChange={handleChange} />
+                <input name="arrets" className="input-modern w-full md:col-span-2" placeholder="Arrêts (optionnel) – ex : 12 rue Victor Hugo" value={form.arrets} onChange={handleChange} />
 
                 {/* Date et heure */}
                 <div className="flex flex-col gap-2 md:col-span-2">
@@ -603,14 +605,18 @@ export default function BookingForm() {
                             name="date"
                             required
                             type="datetime-local"
-                            className={`w-full border rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 transition-colors pr-10 ${showError('date') ? 'border-red-400 focus:ring-red-400' : 'border-blue-200 focus:ring-blue-400'}`}
+                            className={`input-modern w-full pr-10 text-sm md:text-base ${showError('date') ? 'border-red-400 focus:ring-red-400' : ''}`}
                             placeholder="Date et heure"
                             value={form.date}
                             min={getDefaultDateTime()}
                             onChange={handleChange}
+                            style={{
+                                minHeight: '48px',
+                                fontSize: '16px' // Évite le zoom sur iOS
+                            }}
                         />
                         {showError('date') && (
-                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 pointer-events-none">
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-400 pointer-events-none">
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
                             </span>
                         )}
@@ -619,7 +625,7 @@ export default function BookingForm() {
                         <motion.div
                             initial={{ opacity: 0, y: -5 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="flex items-center gap-2 bg-red-100 border border-red-300 text-red-700 text-sm font-semibold rounded px-3 py-2 mt-1"
+                            className="flex items-center gap-2 glass border border-red-400 text-red-400 text-sm font-semibold rounded px-3 py-2 mt-1"
                         >
                             <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
                             <span>{showError('date')}</span>
@@ -635,13 +641,13 @@ export default function BookingForm() {
                             type="number"
                             min="1"
                             max="7"
-                            className={`w-full border rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 transition-colors pr-10 ${showError('passagers') ? 'border-red-400 focus:ring-red-400' : 'border-blue-200 focus:ring-blue-400'}`}
+                            className={`input-modern w-full pr-10 ${showError('passagers') ? 'border-red-400 focus:ring-red-400' : ''}`}
                             placeholder="Passagers"
                             value={form.passagers}
                             onChange={handleChange}
                         />
                         {showError('passagers') && (
-                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 pointer-events-none">
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-400 pointer-events-none">
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
                             </span>
                         )}
@@ -650,7 +656,7 @@ export default function BookingForm() {
                         <motion.div
                             initial={{ opacity: 0, y: -5 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="flex items-center gap-2 bg-red-100 border border-red-300 text-red-700 text-sm font-semibold rounded px-3 py-2 mt-1"
+                            className="flex items-center gap-2 glass border border-red-400 text-red-400 text-sm font-semibold rounded px-3 py-2 mt-1"
                         >
                             <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
                             <span>{showError('passagers')}</span>
@@ -660,7 +666,7 @@ export default function BookingForm() {
 
                 <input
                     name="bagages"
-                    className="w-full border border-blue-200 rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="input-modern w-full"
                     placeholder="Bagages (optionnel)"
                     value={form.bagages}
                     onChange={handleChange}
@@ -668,10 +674,10 @@ export default function BookingForm() {
 
                 {/* Indicateur de progression */}
                 <div className="md:col-span-2 mt-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <div className="flex-1 bg-gray-200 rounded-full h-2">
+                    <div className="flex items-center gap-2 text-sm text-gray-400">
+                        <div className="flex-1 bg-gray-800 rounded-full h-2">
                             <motion.div
-                                className="bg-blue-500 h-2 rounded-full"
+                                className="gradient-primary h-2 rounded-full"
                                 initial={{ width: 0 }}
                                 animate={{
                                     width: `${Math.min(100, Object.keys(form).filter(key => form[key as keyof BookingFormData]).length * 12.5)}%`
@@ -687,9 +693,9 @@ export default function BookingForm() {
 
                 <button
                     type="submit"
-                    className={`md:col-span-2 mt-6 w-full font-bold py-3 rounded-xl shadow transition-all duration-200 ${hasVisibleErrors || loading
-                        ? 'bg-gray-400 cursor-not-allowed'
-                        : 'bg-blue-700 hover:bg-blue-800 hover:scale-105 text-white'
+                    className={`btn-modern md:col-span-2 mt-6 w-full font-bold py-3 text-lg ${hasVisibleErrors || loading
+                        ? 'opacity-60 cursor-not-allowed'
+                        : ''
                         }`}
                     disabled={loading || hasVisibleErrors}
                 >
@@ -701,7 +707,7 @@ export default function BookingForm() {
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
-                        className="md:col-span-2 mt-4 w-full flex flex-col items-center gap-2 bg-green-50 border border-green-200 text-green-700 py-3 rounded-xl shadow"
+                        className="md:col-span-2 mt-4 w-full flex flex-col items-center gap-2 glass border border-green-400 text-green-300 py-4 rounded-2xl shadow"
                     >
                         <span className="text-2xl">✅</span>
                         <span>Votre demande a bien été prise en compte.<br />Vous serez contacté rapidement.</span>
@@ -710,8 +716,8 @@ export default function BookingForm() {
             </form>
 
             {/* Assurance */}
-            <div className="flex items-center gap-2 mt-4 text-green-700 text-sm font-semibold justify-center">
-                <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24">
+            <div className="flex items-center gap-2 mt-4 text-green-400 text-sm font-semibold justify-center">
+                <svg className="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24">
                     <path d="M12 22C7.03 22 3 17.97 3 13C3 9.13 5.94 5.68 10.44 3.27C11.13 2.89 12.08 2.89 12.77 3.27C17.27 5.68 20.21 9.13 20.21 13C20.21 17.97 16.18 22 12 22Z" stroke="currentColor" strokeWidth="2" />
                     <path d="M9 13.5L11 15.5L15 11.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
@@ -721,7 +727,7 @@ export default function BookingForm() {
             {/* Quick-fill */}
             <button
                 type="button"
-                className="mt-3 px-4 py-2 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold mx-auto block hover:bg-blue-200 transition"
+                className="mt-3 px-4 py-2 rounded-full gradient-primary text-white text-xs font-semibold mx-auto block hover:scale-105 transition"
                 onClick={handleQuickFill}
             >
                 Pré-remplir pour un départ immédiat à Paris
@@ -733,7 +739,7 @@ export default function BookingForm() {
             </p>
             <a
                 href="https://wa.me/33615392250?text=Merci%20de%20m'envoyer%20votre%20carte%20de%20visite%20taxi."
-                className="block text-blue-600 underline mt-4 text-center font-semibold hover:text-blue-800 transition"
+                className="block text-primary underline mt-4 text-center font-semibold hover:text-secondary transition"
                 target="_blank"
                 rel="noopener noreferrer"
             >
@@ -750,13 +756,13 @@ export default function BookingForm() {
                         className="fixed inset-0 flex items-center justify-center z-50 bg-black/10"
                     >
                         <motion.div
-                            className="bg-white rounded-xl p-8 flex flex-col items-center shadow-2xl"
+                            className="glass-strong p-8 flex flex-col items-center shadow-2xl"
                             initial={{ y: 100, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
                             exit={{ y: 100, opacity: 0 }}
                         >
                             <span className="text-5xl mb-4">✅</span>
-                            <p className="text-xl font-bold text-green-600">Redirection vers WhatsApp…</p>
+                            <p className="text-xl font-bold text-green-400">Redirection vers WhatsApp…</p>
                         </motion.div>
                     </motion.div>
                 )}

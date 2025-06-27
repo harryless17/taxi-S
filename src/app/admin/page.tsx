@@ -277,20 +277,20 @@ export default function AdminDashboard() {
             {/* Header */}
             <div className="bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center py-6">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
-                                <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-4 sm:py-6 gap-4 sm:gap-0">
+                        <div className="flex items-center gap-3 sm:gap-4">
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center flex-shrink-0">
+                                <svg className="w-5 h-5 sm:w-7 sm:h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                                 </svg>
                             </div>
-                            <div>
-                                <h1 className="text-3xl font-bold text-white">Dashboard Admin</h1>
-                                <p className="text-blue-100 font-medium">Gestion des réservations taxi</p>
+                            <div className="min-w-0 flex-1">
+                                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white truncate">Dashboard Admin</h1>
+                                <p className="text-sm sm:text-base text-blue-100 font-medium truncate">Gestion des réservations taxi</p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-4">
-                            <span className="text-blue-100 font-medium">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
+                            <span className="text-sm sm:text-base text-blue-100 font-medium truncate w-full sm:w-auto text-center sm:text-left">
                                 {session?.user?.email}
                             </span>
                             <button
@@ -299,7 +299,7 @@ export default function AdminDashboard() {
                                     await supabase.auth.signOut();
                                     router.replace("/admin/login");
                                 }}
-                                className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-200 hover:scale-105"
+                                className="w-full sm:w-auto bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl text-sm font-semibold transition-all duration-200 hover:scale-105"
                             >
                                 Déconnexion
                             </button>

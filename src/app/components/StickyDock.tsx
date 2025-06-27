@@ -1,8 +1,17 @@
 'use client';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
+import { usePathname } from "next/navigation";
 
 export default function StickyDock() {
+    const pathname = usePathname();
+    const isAdminPage = pathname?.startsWith('/admin');
+
+    // Ne pas afficher le dock sur les pages admin
+    if (isAdminPage) {
+        return null;
+    }
+
     const [isVisible, setIsVisible] = useState(false);
 
     useEffect(() => {

@@ -8,8 +8,8 @@ const faqs = [
         answer: "Oui, notre service fonctionne 24h/24 et 7j/7 sur Paris et région parisienne."
     },
     {
-        question: "Puis-je réserver à l’avance ?",
-        answer: "Absolument ! Vous pouvez réserver à tout moment via WhatsApp ou le formulaire, en précisant la date et l’heure souhaitées."
+        question: "Puis-je réserver à l'avance ?",
+        answer: "Absolument ! Vous pouvez réserver à tout moment via WhatsApp ou le formulaire, en précisant la date et l'heure souhaitées."
     },
     {
         question: "Les paiements par carte sont-ils acceptés ?",
@@ -26,14 +26,16 @@ export default function Faq() {
 
     return (
         <motion.section
-            className="w-full max-w-2xl mt-12 mb-4"
+            className="w-full max-w-2xl mt-16 mb-16"
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.7, ease: "easeOut" }}
+            transition={{ duration: 0.7, ease: 'easeOut' }}
         >
-            <h2 className="text-2xl font-bold text-blue-700 mb-6 text-center">FAQ – Questions fréquentes</h2>
-            <div className="space-y-4">
+            <h2 className="text-4xl md:text-5xl font-black text-gradient mb-8 text-center">
+                FAQ – Questions fréquentes
+            </h2>
+            <div className="space-y-6">
                 {faqs.map((faq, i) => {
                     const isOpen = open === i;
                     return (
@@ -47,32 +49,33 @@ export default function Faq() {
                             <button
                                 type="button"
                                 onClick={() => setOpen(isOpen ? null : i)}
-                                className="w-full flex justify-between items-center bg-blue-50 px-6 py-4 rounded-xl shadow hover:bg-blue-100 transition font-semibold text-blue-800 text-left"
+                                className={`w-full flex justify-between items-center glass-strong px-6 py-5 rounded-2xl shadow-xl font-semibold text-lg text-left transition-all duration-300 border border-transparent hover:border-primary focus:border-primary ${isOpen ? 'border-primary' : ''}`}
                                 aria-expanded={isOpen}
                                 aria-controls={`faq-answer-${i}`}
                             >
-                                <span>{faq.question}</span>
-                                <svg className={`w-6 h-6 ml-2 transform transition-transform ${isOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                    <path d="M19 9l-7 7-7-7" />
-                                </svg>
+                                <span className="text-gradient drop-shadow">{faq.question}</span>
+                                <span className={`ml-4 flex items-center justify-center w-8 h-8 rounded-full transition-all duration-300 ${isOpen ? 'bg-primary/20 rotate-180' : 'bg-white/10'}`}>
+                                    <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                        <path d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </span>
                             </button>
                             <AnimatePresence initial={false}>
-                                <motion.div
-                                    id={`faq-answer-${i}`}
-                                    initial={false}
-                                    animate={isOpen
-                                        ? { maxHeight: 200, opacity: 1, paddingTop: 16, paddingBottom: 16 }
-                                        : { maxHeight: 0, opacity: 0, paddingTop: 0, paddingBottom: 0 }
-                                    }
-                                    transition={{ duration: 0.32, ease: "easeInOut" }}
-                                    exit={{ maxHeight: 0, opacity: 0, paddingTop: 0, paddingBottom: 0, transition: { duration: 0.32 } }}
-                                    className="overflow-hidden bg-white px-6"
-                                    style={{ borderBottomLeftRadius: 12, borderBottomRightRadius: 12 }}
-                                >
-                                    <div className="text-blue-700 border-t border-blue-100 text-sm">
-                                        {faq.answer}
-                                    </div>
-                                </motion.div>
+                                {isOpen && (
+                                    <motion.div
+                                        id={`faq-answer-${i}`}
+                                        initial={{ opacity: 0, y: -10, maxHeight: 0, paddingTop: 0, paddingBottom: 0 }}
+                                        animate={{ opacity: 1, y: 0, maxHeight: 300, paddingTop: 20, paddingBottom: 20 }}
+                                        exit={{ opacity: 0, y: -10, maxHeight: 0, paddingTop: 0, paddingBottom: 0 }}
+                                        transition={{ duration: 0.32, ease: 'easeInOut' }}
+                                        className="overflow-hidden px-6"
+                                        style={{ borderBottomLeftRadius: 16, borderBottomRightRadius: 16 }}
+                                    >
+                                        <div className="text-gray-200 text-base border-t border-primary/20 pt-4">
+                                            {faq.answer}
+                                        </div>
+                                    </motion.div>
+                                )}
                             </AnimatePresence>
                         </motion.div>
                     );
