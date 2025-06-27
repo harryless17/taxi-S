@@ -11,7 +11,7 @@ import ChauffeurBio from "./components/ChauffeurBio";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-gradient-to-b from-blue-100 via-white to-blue-50 flex flex-col items-center">
+    <main className="min-h-screen bg-black flex flex-col items-center">
       {/* HERO */}
       <Hero />
       {/* SERVICES */}

@@ -1,19 +1,8 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import StickyWhatsAppButton from "./components/StickyWhatsAppButton";
 import './globals.css';
 import StickyPhoneButton from "@/app/components/StickyPhoneButton";
 import StickyDock from "@/app/components/StickyDock";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "Taxi Aghiles Paris | Réservation Taxi rapide WhatsApp",
@@ -39,7 +28,6 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
 };
 
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -47,9 +35,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className="antialiased">
         {children}
         <StickyDock />
       </body>
