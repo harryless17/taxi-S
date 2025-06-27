@@ -14,7 +14,7 @@ type Reservation = {
     date: string;
     passengers?: number;
     luggages?: number;
-    status: string;
+    status: "nouveau" | "traitée" | "annulée" | string;
     created_at: string;
 };
 
@@ -32,31 +32,35 @@ function StatusBadge({ status }: { status: string }) {
     );
 }
 
-function StatCard({ title, value, icon, color, trend }: {
+function StatCard({ title, value, icon, color, trend, extra }: {
     title: string;
     value: string | number;
     icon: React.ReactNode;
     color: string;
     trend?: { value: number; positive: boolean };
+    extra?: React.ReactNode;
 }) {
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-gradient-to-br from-white to-gray-50 rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 hover:scale-105"
+            className="bg-gradient-to-br from-white to-gray-50 rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 flex flex-col justify-between min-h-[148px]"
         >
             <div className="flex items-center justify-between">
                 <div>
                     <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">{title}</p>
                     <p className="text-3xl font-bold text-gray-900 mt-2">{value}</p>
-                    {trend && (
+                    {trend ? (
                         <div className="flex items-center mt-3">
                             <span className={`text-sm font-semibold ${trend.positive ? 'text-green-600' : 'text-red-600'}`}>
                                 {trend.positive ? '↗' : '↘'} {Math.abs(trend.value)}%
                             </span>
                             <span className="text-xs text-gray-500 ml-2">vs hier</span>
                         </div>
+                    ) : (
+                        <div className="mt-3 h-5 invisible select-none">-</div>
                     )}
+                    {extra}
                 </div>
                 <div className={`w-14 h-14 rounded-xl ${color} flex items-center justify-center shadow-lg`}>
                     {icon}
@@ -71,7 +75,7 @@ function Pagination({ currentPage, totalPages, onPageChange }: {
     totalPages: number;
     onPageChange: (page: number) => void;
 }) {
-    const pages = [];
+    const pages: number[] = [];
     const maxVisiblePages = 5;
 
     let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
@@ -92,30 +96,35 @@ function Pagination({ currentPage, totalPages, onPageChange }: {
             </div>
             <div className="flex items-center gap-2">
                 <button
+                    type="button"
                     onClick={() => onPageChange(currentPage - 1)}
                     disabled={currentPage === 1}
                     className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Page précédente"
                 >
                     Précédent
                 </button>
-
                 {pages.map(page => (
                     <button
+                        type="button"
                         key={page}
                         onClick={() => onPageChange(page)}
                         className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${page === currentPage
                             ? 'bg-blue-600 text-white'
                             : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
                             }`}
+                        aria-current={page === currentPage ? "page" : undefined}
+                        aria-label={`Page ${page}`}
                     >
                         {page}
                     </button>
                 ))}
-
                 <button
+                    type="button"
                     onClick={() => onPageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
                     className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Page suivante"
                 >
                     Suivant
                 </button>
@@ -142,6 +151,18 @@ export default function AdminDashboard() {
     const [selected, setSelected] = useState<Reservation | null>(null);
     const [updating, setUpdating] = useState(false);
     const [updateError, setUpdateError] = useState<string | null>(null);
+    const [showSuccess, setShowSuccess] = useState(false);
+
+    // Gestion fermeture modale avec Escape
+    type EscapeHandler = (e: KeyboardEvent) => void;
+    useEffect(() => {
+        if (!selected) return;
+        const handleEsc: EscapeHandler = (e) => {
+            if (e.key === 'Escape') setSelected(null);
+        };
+        window.addEventListener('keydown', handleEsc);
+        return () => window.removeEventListener('keydown', handleEsc);
+    }, [selected]);
 
     // Auth/session
     useEffect(() => {
@@ -183,8 +204,9 @@ export default function AdminDashboard() {
 
     // Filtrage des réservations
     const filteredReservations = reservations.filter(resa => {
-        const matchesSearch = resa.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            resa.phone.includes(searchTerm) ||
+        const matchesSearch =
+            resa.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            resa.phone.replace(/\s/g, '').includes(searchTerm.replace(/\s/g, '')) ||
             resa.departure.toLowerCase().includes(searchTerm.toLowerCase()) ||
             resa.arrival.toLowerCase().includes(searchTerm.toLowerCase());
 
@@ -192,6 +214,9 @@ export default function AdminDashboard() {
 
         let matchesDate = true;
         if (dateFilter === "today") {
+            const today = new Date().toDateString();
+            matchesDate = new Date(resa.created_at).toDateString() === today;
+        } else if (dateFilter === "today-trip") {
             const today = new Date().toDateString();
             matchesDate = new Date(resa.date).toDateString() === today;
         } else if (dateFilter === "week") {
@@ -204,7 +229,7 @@ export default function AdminDashboard() {
     });
 
     // Pagination
-    const totalPages = Math.ceil(filteredReservations.length / itemsPerPage);
+    const totalPages = Math.max(1, Math.ceil(filteredReservations.length / itemsPerPage));
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     const paginatedReservations = filteredReservations.slice(startIndex, endIndex);
@@ -215,13 +240,16 @@ export default function AdminDashboard() {
     }, [searchTerm, statusFilter, dateFilter]);
 
     // Statistiques
-    const nouvelles = filteredReservations.filter(r => r.status === "nouveau");
-    const traitees = filteredReservations.filter(r => r.status === "traitée");
-    const annulees = filteredReservations.filter(r => r.status === "annulée");
+    const nouvelles = reservations.filter(r => r.status === "nouveau");
+    const traitees = reservations.filter(r => r.status === "traitée");
+    const annulees = reservations.filter(r => r.status === "annulée");
 
     const totalReservations = reservations.length;
-    const todayReservations = reservations.filter(r =>
+    const todayCreatedReservations = reservations.filter(r =>
         new Date(r.created_at).toDateString() === new Date().toDateString()
+    ).length;
+    const todayTrips = reservations.filter(r =>
+        new Date(r.date).toDateString() === new Date().toDateString()
     ).length;
 
     if (loading) {
@@ -241,7 +269,7 @@ export default function AdminDashboard() {
     };
 
     const handleCall = (phone: string) => {
-        window.open(`tel:${phone}`, '_blank');
+        window.open(`tel:${phone.replace(/\s/g, '')}`, '_blank');
     };
 
     return (
@@ -266,6 +294,7 @@ export default function AdminDashboard() {
                                 {session?.user?.email}
                             </span>
                             <button
+                                type="button"
                                 onClick={async () => {
                                     await supabase.auth.signOut();
                                     router.replace("/admin/login");
@@ -281,40 +310,90 @@ export default function AdminDashboard() {
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Statistiques */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <StatCard
-                        title="Total réservations"
-                        value={totalReservations}
-                        icon={<svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>}
-                        color="bg-gradient-to-br from-blue-500 to-blue-600"
-                        trend={{ value: 12, positive: true }}
-                    />
-                    <StatCard
-                        title="Nouvelles"
-                        value={nouvelles.length}
-                        icon={<svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>}
-                        color="bg-gradient-to-br from-orange-500 to-orange-600"
-                    />
-                    <StatCard
-                        title="Traitées"
-                        value={traitees.length}
-                        icon={<svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>}
-                        color="bg-gradient-to-br from-green-500 to-green-600"
-                    />
-                    <StatCard
-                        title="Aujourd'hui"
-                        value={todayReservations}
-                        icon={<svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>}
-                        color="bg-gradient-to-br from-purple-500 to-purple-600"
-                    />
+                <div className="mb-8">
+                    {/* Card Trajets aujourd'hui en avant */}
+                    <div className="mb-8 flex justify-center">
+                        <div
+                            className={`cursor-pointer transition-all duration-200 select-none w-full max-w-xl
+                                ${dateFilter === 'today-trip' ? 'bg-gradient-to-r from-red-600 to-orange-500 shadow-2xl scale-105' : 'bg-gradient-to-r from-orange-400 to-red-500 hover:from-red-600 hover:to-orange-500 hover:shadow-2xl shadow-md'}
+                                rounded-3xl p-8 flex flex-col items-center text-center`}
+                            onClick={() => { setDateFilter('today-trip'); setStatusFilter('all'); }}
+                        >
+                            <div className="flex items-center gap-4 mb-2">
+                                <svg className="w-10 h-10 text-white drop-shadow" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <span className="text-4xl font-extrabold text-white">{todayTrips}</span>
+                            </div>
+                            <div className="text-lg font-bold text-white mb-1">Trajets aujourd'hui</div>
+                            <div className="text-base text-white drop-shadow font-semibold italic mt-1">Courses prévues pour aujourd'hui&nbsp;(<span className="not-italic font-bold">{new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>)</div>
+                        </div>
+                    </div>
+                    {/* Autres cards en dessous */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div
+                            className={`cursor-pointer transition-all duration-200 h-full select-none
+                                ${statusFilter === 'all' && dateFilter === 'all' ? 'bg-blue-50 shadow-2xl ring-0' : 'bg-white hover:bg-blue-50/60 hover:shadow-xl shadow-md'}
+                                rounded-2xl`}
+                            onClick={() => { setStatusFilter('all'); setDateFilter('all'); }}
+                        >
+                            <StatCard
+                                title="Total réservations"
+                                value={totalReservations}
+                                icon={<svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                </svg>}
+                                color="bg-gradient-to-br from-blue-500 to-blue-600"
+                                trend={{ value: 12, positive: true }}
+                            />
+                        </div>
+                        <div
+                            className={`cursor-pointer transition-all duration-200 h-full select-none
+                                ${statusFilter === 'nouveau' ? 'bg-orange-50 shadow-2xl ring-0' : 'bg-white hover:bg-orange-50/60 hover:shadow-xl shadow-md'}
+                                rounded-2xl`}
+                            onClick={() => { setStatusFilter('nouveau'); setDateFilter('all'); }}
+                        >
+                            <StatCard
+                                title="Nouvelles"
+                                value={nouvelles.length}
+                                icon={<svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>}
+                                color="bg-gradient-to-br from-orange-500 to-orange-600"
+                            />
+                        </div>
+                        <div
+                            className={`cursor-pointer transition-all duration-200 h-full select-none
+                                ${statusFilter === 'traitée' ? 'bg-green-50 shadow-2xl ring-0' : 'bg-white hover:bg-green-50/60 hover:shadow-xl shadow-md'}
+                                rounded-2xl`}
+                            onClick={() => { setStatusFilter('traitée'); setDateFilter('all'); }}
+                        >
+                            <StatCard
+                                title="Traitées"
+                                value={traitees.length}
+                                icon={<svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>}
+                                color="bg-gradient-to-br from-green-500 to-green-600"
+                            />
+                        </div>
+                        <div
+                            className={`cursor-pointer transition-all duration-200 h-full select-none
+                                ${dateFilter === 'today' ? 'bg-blue-50 shadow-2xl ring-0' : 'bg-white hover:bg-blue-50/60 hover:shadow-xl shadow-md'}
+                                rounded-2xl`}
+                            onClick={() => { setDateFilter('today'); setStatusFilter('all'); }}
+                        >
+                            <StatCard
+                                title="Réservations aujourd'hui"
+                                value={todayCreatedReservations}
+                                icon={<svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>}
+                                color="bg-gradient-to-br from-blue-500 to-blue-600"
+                                extra={<div className="text-xs text-blue-700 mt-1">Créées aujourd'hui</div>}
+                            />
+                        </div>
+                    </div>
                 </div>
 
                 {/* Filtres et recherche */}
@@ -357,6 +436,7 @@ export default function AdminDashboard() {
                             >
                                 <option value="all">Toutes les dates</option>
                                 <option value="today">Aujourd'hui</option>
+                                <option value="today-trip">Trajets aujourd'hui</option>
                                 <option value="week">7 derniers jours</option>
                             </select>
                         </div>
@@ -370,7 +450,7 @@ export default function AdminDashboard() {
                             Réservations ({filteredReservations.length})
                         </h2>
                         <p className="text-sm text-gray-600 mt-1">
-                            Affichage de {startIndex + 1} à {Math.min(endIndex, filteredReservations.length)} sur {filteredReservations.length} résultats
+                            Affichage de {filteredReservations.length === 0 ? 0 : startIndex + 1} à {Math.min(endIndex, filteredReservations.length)} sur {filteredReservations.length} résultats
                         </p>
                     </div>
 
@@ -439,6 +519,7 @@ export default function AdminDashboard() {
                                                 <td className="px-8 py-6 whitespace-nowrap text-sm font-medium">
                                                     <div className="flex items-center gap-3">
                                                         <button
+                                                            type="button"
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 handleWhatsApp(resa.phone, resa.name);
@@ -451,6 +532,7 @@ export default function AdminDashboard() {
                                                             </svg>
                                                         </button>
                                                         <button
+                                                            type="button"
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 handleCall(resa.phone);
@@ -499,7 +581,7 @@ export default function AdminDashboard() {
                             exit={{ scale: 0.95, opacity: 0, y: 20 }}
                             transition={{ type: "spring", damping: 25, stiffness: 300 }}
                             className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
-                            onClick={(e) => e.stopPropagation()}
+                            onClick={e => e.stopPropagation()}
                         >
                             {/* Header avec gradient */}
                             <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white">
@@ -516,6 +598,7 @@ export default function AdminDashboard() {
                                         </div>
                                     </div>
                                     <button
+                                        type="button"
                                         onClick={() => setSelected(null)}
                                         className="text-white/80 hover:text-white p-3 rounded-2xl hover:bg-white/20 transition-all duration-200"
                                     >
@@ -537,6 +620,7 @@ export default function AdminDashboard() {
                                     </h4>
                                     <div className="flex flex-wrap gap-3">
                                         <button
+                                            type="button"
                                             onClick={() => handleWhatsApp(selected.phone, selected.name)}
                                             className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 hover:scale-105 shadow-lg"
                                         >
@@ -546,6 +630,7 @@ export default function AdminDashboard() {
                                             WhatsApp
                                         </button>
                                         <button
+                                            type="button"
                                             onClick={() => handleCall(selected.phone)}
                                             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 hover:scale-105 shadow-lg"
                                         >
@@ -555,6 +640,7 @@ export default function AdminDashboard() {
                                             Appeler
                                         </button>
                                         <button
+                                            type="button"
                                             onClick={() => navigator.clipboard.writeText(selected.phone)}
                                             className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 hover:scale-105 shadow-lg"
                                         >
@@ -675,36 +761,45 @@ export default function AdminDashboard() {
                                 </div>
 
                                 {/* Gestion du statut */}
-                                <div className="mt-8 p-6 bg-gradient-to-r from-gray-50 to-blue-50 rounded-2xl border border-gray-200">
+                                <div className={`mt-8 p-6 bg-white rounded-2xl border-2 shadow-xl transition-colors duration-300 ${selected.status === 'nouveau' ? 'border-blue-400' : selected.status === 'traitée' ? 'border-green-400' : selected.status === 'annulée' ? 'border-red-400' : 'border-gray-200'}`}>
                                     <h4 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-                                        <svg className="w-5 h-5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <svg className={`w-5 h-5 ${selected.status === 'nouveau' ? 'text-blue-500' : selected.status === 'traitée' ? 'text-green-500' : selected.status === 'annulée' ? 'text-red-500' : 'text-gray-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
                                         Gestion du statut
                                     </h4>
                                     <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-                                        <div className="flex items-center gap-4">
+                                        <div className="flex items-center gap-6">
                                             <div>
                                                 <label className="block text-sm font-semibold text-gray-700 mb-2">Statut actuel</label>
-                                                <StatusBadge status={selected.status} />
+                                                <span className={`inline-flex items-center px-4 py-2 rounded-full text-base font-bold shadow-md transition-colors duration-300 ${selected.status === 'nouveau' ? 'bg-blue-100 text-blue-800' : selected.status === 'traitée' ? 'bg-green-100 text-green-800' : selected.status === 'annulée' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}`}>{selected.status.charAt(0).toUpperCase() + selected.status.slice(1)}</span>
                                             </div>
                                             <div>
                                                 <label className="block text-sm font-semibold text-gray-700 mb-2">Changer le statut</label>
-                                                <select
-                                                    className="border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white font-medium shadow-sm"
-                                                    value={selected.status}
-                                                    onChange={e => setSelected(s => s ? { ...s, status: e.target.value } : s)}
-                                                    disabled={updating}
-                                                >
-                                                    <option value="nouveau">Nouveau</option>
-                                                    <option value="traitée">Traité</option>
-                                                    <option value="annulée">Annulé</option>
-                                                </select>
+                                                <div className="relative">
+                                                    <select
+                                                        className={`border-2 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:border-transparent font-medium shadow-sm w-48 transition-colors duration-300 
+                                                            ${selected.status === 'nouveau' ? 'border-blue-400 text-blue-700 focus:ring-blue-200' : ''}
+                                                            ${selected.status === 'traitée' ? 'border-green-400 text-green-700 focus:ring-green-200' : ''}
+                                                            ${selected.status === 'annulée' ? 'border-red-400 text-red-700 focus:ring-red-200' : ''}
+                                                            ${selected.status !== 'nouveau' && selected.status !== 'traitée' && selected.status !== 'annulée' ? 'border-gray-300 text-gray-900 focus:ring-gray-200' : ''}`}
+                                                        value={selected.status}
+                                                        onChange={e => setSelected(s => s ? { ...s, status: e.target.value } : s)}
+                                                        disabled={updating}
+                                                    >
+                                                        <option value="nouveau">Nouveau</option>
+                                                        <option value="traitée">Traité</option>
+                                                        <option value="annulée">Annulé</option>
+                                                    </select>
+                                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
-
-                                        <div className="flex gap-3">
+                                        <div className="flex gap-3 mt-6 lg:mt-0">
                                             <button
+                                                type="button"
                                                 onClick={async () => {
                                                     setUpdating(true);
                                                     setUpdateError(null);
@@ -719,11 +814,12 @@ export default function AdminDashboard() {
                                                         setReservations(rs => rs.map(r =>
                                                             r.id === selected.id ? { ...r, status: selected.status } : r
                                                         ));
-                                                        setSelected(null);
+                                                        setShowSuccess(true);
+                                                        setTimeout(() => setShowSuccess(false), 2000);
                                                     }
                                                 }}
                                                 disabled={updating}
-                                                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-semibold transition-all duration-200 hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                                className={`px-8 py-3 rounded-xl font-semibold transition-all duration-200 hover:scale-105 shadow-lg flex items-center gap-2 text-white ${selected.status === 'nouveau' ? 'bg-blue-600 hover:bg-blue-700' : selected.status === 'traitée' ? 'bg-green-600 hover:bg-green-700' : selected.status === 'annulée' ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-400 hover:bg-gray-500'} disabled:opacity-50 disabled:cursor-not-allowed`}
                                             >
                                                 {updating ? (
                                                     <>
@@ -743,6 +839,7 @@ export default function AdminDashboard() {
                                                 )}
                                             </button>
                                             <button
+                                                type="button"
                                                 onClick={() => setSelected(null)}
                                                 className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-8 py-3 rounded-xl font-semibold transition-all duration-200 hover:scale-105 shadow-lg"
                                             >
@@ -750,19 +847,6 @@ export default function AdminDashboard() {
                                             </button>
                                         </div>
                                     </div>
-
-                                    {updateError && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: -10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            className="mt-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-center gap-2"
-                                        >
-                                            <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" />
-                                            </svg>
-                                            <span className="font-semibold">{updateError}</span>
-                                        </motion.div>
-                                    )}
                                 </div>
                             </div>
                         </motion.div>

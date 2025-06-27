@@ -109,8 +109,8 @@ function validateForm(form: BookingFormData): ValidationErrors {
 
 function getDefaultDateTime() {
     const now = new Date();
-    now.setHours(now.getHours() + 1);
-    now.setMinutes(0, 0, 0);
+    now.setMinutes(now.getMinutes() + 30);
+    now.setSeconds(0, 0);
     const pad = (n: number) => String(n).padStart(2, "0");
     const yyyy = now.getFullYear();
     const mm = pad(now.getMonth() + 1);
@@ -189,6 +189,8 @@ export default function BookingForm() {
     const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
     const [loadingSuggestions, setLoadingSuggestions] = useState(false);
     const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(null);
+    const [touched, setTouched] = useState<{ [K in keyof BookingFormData]?: boolean }>({});
+    const [hasSubmitted, setHasSubmitted] = useState(false);
 
     useEffect(() => {
         if (typeof window === "undefined") return;
@@ -206,7 +208,7 @@ export default function BookingForm() {
             bagages: params.get("bagages") || undefined,
         };
 
-        // localStorage
+        // localStorage pour tous les champs sauf la date
         let fromStorage: Partial<BookingFormData> = {};
         try {
             const last = window.localStorage.getItem('taxi-last-booking');
@@ -218,7 +220,7 @@ export default function BookingForm() {
             tel: fromUrl.tel ?? fromStorage.tel ?? "",
             depart: fromUrl.depart ?? fromStorage.depart ?? "",
             arrivee: fromUrl.arrivee ?? fromStorage.arrivee ?? "",
-            date: fromUrl.date ?? fromStorage.date ?? getDefaultDateTime(),
+            date: fromUrl.date ?? getDefaultDateTime(),
             passagers: fromUrl.passagers ?? fromStorage.passagers ?? "",
             arrets: fromUrl.arrets ?? fromStorage.arrets ?? "",
             bagages: fromUrl.bagages ?? fromStorage.bagages ?? "",
@@ -230,6 +232,11 @@ export default function BookingForm() {
         const validationErrors = validateForm(form);
         setErrors(validationErrors);
     }, [form]);
+
+    // Affichage conditionnel des erreurs
+    const showError = (field: keyof BookingFormData) => {
+        return (hasSubmitted || touched[field]) && (field in errors) && errors[field as keyof ValidationErrors];
+    };
 
     // Fonction pour récupérer les suggestions avec debounce
     const fetchSuggestions = async (query: string, field: 'depart' | 'arrivee') => {
@@ -274,7 +281,7 @@ export default function BookingForm() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
+        setHasSubmitted(true);
         const validationErrors = validateForm(form);
         if (Object.keys(validationErrors).length > 0) {
             setErrors(validationErrors);
@@ -321,8 +328,6 @@ export default function BookingForm() {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setForm(f => ({ ...f, [name]: value }));
-
-        // Efface l'erreur quand l'utilisateur commence à taper
         if (errors[name as keyof ValidationErrors]) {
             setErrors(prev => ({ ...prev, [name]: undefined }));
         }
@@ -371,6 +376,10 @@ export default function BookingForm() {
         }, 200);
     };
 
+    const hasVisibleErrors = Object.keys(errors).some(
+        (key) => showError(key as keyof BookingFormData)
+    );
+
     return (
         <motion.section
             className="w-full max-w-2xl mt-10 bg-white rounded-2xl shadow-lg p-8"
@@ -390,25 +399,26 @@ export default function BookingForm() {
                         <input
                             name="nom"
                             required
-                            className={`w-full border rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 transition-colors pr-10 ${errors.nom ? 'border-red-400 focus:ring-red-400' : 'border-blue-200 focus:ring-blue-400'}`}
+                            className={`w-full border rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 transition-colors pr-10 ${showError('nom') ? 'border-red-400 focus:ring-red-400' : 'border-blue-200 focus:ring-blue-400'}`}
                             placeholder="Nom"
                             value={form.nom}
                             onChange={handleChange}
+                            onBlur={() => setTouched(t => ({ ...t, nom: true }))}
                         />
-                        {errors.nom && (
+                        {showError('nom') && (
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 pointer-events-none">
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
                             </span>
                         )}
                     </div>
-                    {errors.nom && (
+                    {showError('nom') && (
                         <motion.div
                             initial={{ opacity: 0, y: -5 }}
                             animate={{ opacity: 1, y: 0 }}
                             className="flex items-center gap-2 bg-red-100 border border-red-300 text-red-700 text-sm font-semibold rounded px-3 py-2 mt-1"
                         >
                             <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
-                            <span>{errors.nom}</span>
+                            <span>{showError('nom')}</span>
                         </motion.div>
                     )}
                 </div>
@@ -420,25 +430,26 @@ export default function BookingForm() {
                             name="tel"
                             required
                             type="tel"
-                            className={`w-full border rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 transition-colors pr-10 ${errors.tel ? 'border-red-400 focus:ring-red-400' : 'border-blue-200 focus:ring-blue-400'}`}
+                            className={`w-full border rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 transition-colors pr-10 ${showError('tel') ? 'border-red-400 focus:ring-red-400' : 'border-blue-200 focus:ring-blue-400'}`}
                             placeholder="Téléphone"
                             value={form.tel}
                             onChange={handleChange}
+                            onBlur={() => setTouched(t => ({ ...t, tel: true }))}
                         />
-                        {errors.tel && (
+                        {showError('tel') && (
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 pointer-events-none">
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
                             </span>
                         )}
                     </div>
-                    {errors.tel && (
+                    {showError('tel') && (
                         <motion.div
                             initial={{ opacity: 0, y: -5 }}
                             animate={{ opacity: 1, y: 0 }}
                             className="flex items-center gap-2 bg-red-100 border border-red-300 text-red-700 text-sm font-semibold rounded px-3 py-2 mt-1"
                         >
                             <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
-                            <span>{errors.tel}</span>
+                            <span>{showError('tel')}</span>
                         </motion.div>
                     )}
                 </div>
@@ -449,14 +460,14 @@ export default function BookingForm() {
                         <input
                             name="depart"
                             required
-                            className={`w-full border rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 transition-colors pr-10 ${errors.depart ? 'border-red-400 focus:ring-red-400' : 'border-blue-200 focus:ring-blue-400'}`}
+                            className={`w-full border rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 transition-colors pr-10 ${showError('depart') ? 'border-red-400 focus:ring-red-400' : 'border-blue-200 focus:ring-blue-400'}`}
                             placeholder="Départ"
                             value={form.depart}
                             onChange={handleChange}
                             onFocus={() => handleFocus('depart')}
-                            onBlur={handleBlur}
+                            onBlur={() => setTouched(t => ({ ...t, depart: true }))}
                         />
-                        {errors.depart && (
+                        {showError('depart') && (
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 pointer-events-none">
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
                             </span>
@@ -501,14 +512,14 @@ export default function BookingForm() {
                             </motion.div>
                         )}
                     </div>
-                    {errors.depart && (
+                    {showError('depart') && (
                         <motion.div
                             initial={{ opacity: 0, y: -5 }}
                             animate={{ opacity: 1, y: 0 }}
                             className="flex items-center gap-2 bg-red-100 border border-red-300 text-red-700 text-sm font-semibold rounded px-3 py-2 mt-1"
                         >
                             <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
-                            <span>{errors.depart}</span>
+                            <span>{showError('depart')}</span>
                         </motion.div>
                     )}
                 </div>
@@ -519,14 +530,14 @@ export default function BookingForm() {
                         <input
                             name="arrivee"
                             required
-                            className={`w-full border rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 transition-colors pr-10 ${errors.arrivee ? 'border-red-400 focus:ring-red-400' : 'border-blue-200 focus:ring-blue-400'}`}
+                            className={`w-full border rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 transition-colors pr-10 ${showError('arrivee') ? 'border-red-400 focus:ring-red-400' : 'border-blue-200 focus:ring-blue-400'}`}
                             placeholder="Arrivée"
                             value={form.arrivee}
                             onChange={handleChange}
                             onFocus={() => handleFocus('arrivee')}
-                            onBlur={handleBlur}
+                            onBlur={() => setTouched(t => ({ ...t, arrivee: true }))}
                         />
-                        {errors.arrivee && (
+                        {showError('arrivee') && (
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 pointer-events-none">
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
                             </span>
@@ -571,14 +582,14 @@ export default function BookingForm() {
                             </motion.div>
                         )}
                     </div>
-                    {errors.arrivee && (
+                    {showError('arrivee') && (
                         <motion.div
                             initial={{ opacity: 0, y: -5 }}
                             animate={{ opacity: 1, y: 0 }}
                             className="flex items-center gap-2 bg-red-100 border border-red-300 text-red-700 text-sm font-semibold rounded px-3 py-2 mt-1"
                         >
                             <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
-                            <span>{errors.arrivee}</span>
+                            <span>{showError('arrivee')}</span>
                         </motion.div>
                     )}
                 </div>
@@ -592,26 +603,26 @@ export default function BookingForm() {
                             name="date"
                             required
                             type="datetime-local"
-                            className={`w-full border rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 transition-colors pr-10 ${errors.date ? 'border-red-400 focus:ring-red-400' : 'border-blue-200 focus:ring-blue-400'}`}
+                            className={`w-full border rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 transition-colors pr-10 ${showError('date') ? 'border-red-400 focus:ring-red-400' : 'border-blue-200 focus:ring-blue-400'}`}
                             placeholder="Date et heure"
                             value={form.date}
                             min={getDefaultDateTime()}
                             onChange={handleChange}
                         />
-                        {errors.date && (
+                        {showError('date') && (
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 pointer-events-none">
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
                             </span>
                         )}
                     </div>
-                    {errors.date && (
+                    {showError('date') && (
                         <motion.div
                             initial={{ opacity: 0, y: -5 }}
                             animate={{ opacity: 1, y: 0 }}
                             className="flex items-center gap-2 bg-red-100 border border-red-300 text-red-700 text-sm font-semibold rounded px-3 py-2 mt-1"
                         >
                             <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
-                            <span>{errors.date}</span>
+                            <span>{showError('date')}</span>
                         </motion.div>
                     )}
                 </div>
@@ -624,25 +635,25 @@ export default function BookingForm() {
                             type="number"
                             min="1"
                             max="7"
-                            className={`w-full border rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 transition-colors pr-10 ${errors.passagers ? 'border-red-400 focus:ring-red-400' : 'border-blue-200 focus:ring-blue-400'}`}
+                            className={`w-full border rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 transition-colors pr-10 ${showError('passagers') ? 'border-red-400 focus:ring-red-400' : 'border-blue-200 focus:ring-blue-400'}`}
                             placeholder="Passagers"
                             value={form.passagers}
                             onChange={handleChange}
                         />
-                        {errors.passagers && (
+                        {showError('passagers') && (
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 pointer-events-none">
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
                             </span>
                         )}
                     </div>
-                    {errors.passagers && (
+                    {showError('passagers') && (
                         <motion.div
                             initial={{ opacity: 0, y: -5 }}
                             animate={{ opacity: 1, y: 0 }}
                             className="flex items-center gap-2 bg-red-100 border border-red-300 text-red-700 text-sm font-semibold rounded px-3 py-2 mt-1"
                         >
                             <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M21 19a2 2 0 01-1.73 1H4.73A2 2 0 013 19l7.29-12.29a2 2 0 013.42 0L21 19z" /></svg>
-                            <span>{errors.passagers}</span>
+                            <span>{showError('passagers')}</span>
                         </motion.div>
                     )}
                 </div>
@@ -676,11 +687,11 @@ export default function BookingForm() {
 
                 <button
                     type="submit"
-                    className={`md:col-span-2 mt-6 w-full font-bold py-3 rounded-xl shadow transition-all duration-200 ${Object.keys(errors).length > 0 || loading
+                    className={`md:col-span-2 mt-6 w-full font-bold py-3 rounded-xl shadow transition-all duration-200 ${hasVisibleErrors || loading
                         ? 'bg-gray-400 cursor-not-allowed'
                         : 'bg-blue-700 hover:bg-blue-800 hover:scale-105 text-white'
                         }`}
-                    disabled={loading || Object.keys(errors).length > 0}
+                    disabled={loading || hasVisibleErrors}
                 >
                     {loading ? "Envoi en cours…" : "Réserver via WhatsApp"}
                 </button>
